@@ -104,6 +104,8 @@
         };
 
         let audioCtx = null;
+        let musicTimer = null;
+        let musicStep = 0;
         let score = 0;
         let lives = 3;
         let level = 1;
@@ -118,16 +120,23 @@
 
         const PACMAN_SPEED = 4.2; // tiles per second
         const GHOST_SPEEDS = [2.2, 2.0, 1.9, 1.8];
+        const MUSIC_PATTERN = [
+            [523, 0, 392, 0],
+            [659, 0, 440, 0],
+            [587, 0, 440, 0],
+            [659, 0, 494, 0]
+        ];
 
         function unlockAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
             window.audioCtx = audioCtx;
             if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+            startMusic();
         }
 
-        function beep(freq, duration, type = 'sine', gain = 0.06) {
+        function beep(freq, duration, type = 'sine', gain = 0.06, startOffset = 0) {
             if (!audioCtx) return;
-            const t0 = audioCtx.currentTime;
+            const t0 = audioCtx.currentTime + startOffset;
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
             osc.type = type;
@@ -140,21 +149,44 @@
             osc.stop(t0 + duration + 0.04);
         }
 
+        function playMusicStep() {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            if (gameState === 'gameover') return;
+            const step = MUSIC_PATTERN[musicStep % MUSIC_PATTERN.length];
+            const beat = 0.16;
+            if (step[0]) beep(step[0], 0.13, 'square', 0.025, 0);
+            if (step[1]) beep(step[1], 0.13, 'square', 0.018, beat * 0.5);
+            if (step[2]) beep(step[2], 0.13, 'square', 0.025, beat);
+            if (step[3]) beep(step[3], 0.13, 'square', 0.018, beat * 1.5);
+            musicStep = (musicStep + 1) % MUSIC_PATTERN.length;
+            window.musicStep = musicStep;
+        }
+
+        function startMusic() {
+            if (musicTimer) return;
+            musicTimer = setInterval(playMusicStep, 340);
+            window.musicTimer = musicTimer;
+        }
+
         function sfx(name) {
             if (!audioCtx) return;
             if (name === 'waka') {
-                const pitch = (Math.floor(pacman.anim) % 2 === 0) ? 420 : 260;
-                beep(pitch, 0.06, 'square', 0.06);
+                const pitch = (Math.floor(pacman.anim) % 2 === 0) ? 520 : 300;
+                beep(pitch, 0.07, 'square', 0.09);
             } else if (name === 'power') {
-                beep(120, 0.22, 'triangle', 0.10);
+                beep(140, 0.24, 'triangle', 0.13);
+                beep(220, 0.18, 'triangle', 0.08, 0.08);
             } else if (name === 'ghost') {
-                beep(980, 0.09, 'square', 0.08);
+                beep(1040, 0.09, 'square', 0.11);
             } else if (name === 'die') {
-                beep(180, 0.28, 'sawtooth', 0.12);
+                beep(220, 0.16, 'sawtooth', 0.14);
+                beep(140, 0.24, 'sawtooth', 0.10, 0.10);
             } else if (name === 'start') {
-                beep(660, 0.08, 'triangle', 0.08);
+                beep(660, 0.09, 'triangle', 0.10);
+                beep(880, 0.09, 'triangle', 0.08, 0.11);
             } else if (name === 'level') {
-                beep(523, 0.14, 'triangle', 0.08);
+                beep(523, 0.12, 'triangle', 0.10);
+                beep(659, 0.12, 'triangle', 0.08, 0.12);
             }
         }
 
@@ -492,12 +524,33 @@
             }
 
             const ppos = actorDisplayPosition(pacman);
+            ctx.save();
+            ctx.translate(ppos.x, ppos.y);
+            const rotMap = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
+            ctx.rotate(rotMap[pacman.dir] ?? 0);
             ctx.fillStyle = COLORS.pacman;
             ctx.beginPath();
             const mouth = 0.12 + Math.abs(Math.sin(pacman.anim)) * 0.34;
-            ctx.arc(ppos.x, ppos.y, 7, mouth, Math.PI * 2 - mouth);
-            ctx.lineTo(ppos.x, ppos.y);
+            ctx.arc(0, 0, 7, mouth, Math.PI * 2 - mouth);
+            ctx.lineTo(0, 0);
             ctx.fill();
+            ctx.fillStyle = '#ff80c0';
+            ctx.beginPath();
+            ctx.arc(-1.5, -7.3, 1.9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(-4.5, -7.5);
+            ctx.lineTo(-0.2, -5.5);
+            ctx.lineTo(-3.2, -2.6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(1.5, -7.5);
+            ctx.lineTo(5.2, -5.7);
+            ctx.lineTo(2.8, -2.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
 
             const frightened = powerTimer > 0;
             ghosts.forEach(g => {

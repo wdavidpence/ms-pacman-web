@@ -120,6 +120,7 @@
 
         const PACMAN_SPEED = 4.2; // tiles per second
         const GHOST_SPEEDS = [2.2, 2.0, 1.9, 1.8];
+        const TUNNEL_ROW = 14;
         const MUSIC_PATTERN = [
             [523, 0, 392, 0],
             [659, 0, 440, 0],
@@ -127,11 +128,14 @@
             [659, 0, 494, 0]
         ];
 
-        function unlockAudio() {
+        async function unlockAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
             window.audioCtx = audioCtx;
-            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+            if (audioCtx.state === 'suspended') {
+                try { await audioCtx.resume(); } catch (_) {}
+            }
             startMusic();
+            return audioCtx;
         }
 
         function beep(freq, duration, type = 'sine', gain = 0.06, startOffset = 0) {
@@ -172,29 +176,51 @@
             if (!audioCtx) return;
             if (name === 'waka') {
                 const pitch = (Math.floor(pacman.anim) % 2 === 0) ? 520 : 300;
-                beep(pitch, 0.07, 'square', 0.09);
+                beep(pitch, 0.07, 'square', 0.14);
             } else if (name === 'move') {
                 const movePitch = [740, 820, 620, 700][dir ?? 0] ?? 700;
-                beep(movePitch, 0.05, 'triangle', 0.045);
+                beep(movePitch, 0.05, 'triangle', 0.09);
             } else if (name === 'power') {
-                beep(140, 0.24, 'triangle', 0.13);
-                beep(220, 0.18, 'triangle', 0.08, 0.08);
+                beep(140, 0.24, 'triangle', 0.20);
+                beep(220, 0.18, 'triangle', 0.12, 0.08);
             } else if (name === 'ghost') {
-                beep(1040, 0.09, 'square', 0.11);
+                beep(1040, 0.09, 'square', 0.16);
             } else if (name === 'die') {
-                beep(220, 0.16, 'sawtooth', 0.14);
-                beep(140, 0.24, 'sawtooth', 0.10, 0.10);
+                beep(220, 0.16, 'sawtooth', 0.22);
+                beep(140, 0.24, 'sawtooth', 0.16, 0.10);
             } else if (name === 'start') {
-                beep(660, 0.09, 'triangle', 0.10);
-                beep(880, 0.09, 'triangle', 0.08, 0.11);
+                beep(660, 0.09, 'triangle', 0.18);
+                beep(880, 0.09, 'triangle', 0.14, 0.11);
             } else if (name === 'level') {
-                beep(523, 0.12, 'triangle', 0.10);
-                beep(659, 0.12, 'triangle', 0.08, 0.12);
+                beep(523, 0.12, 'triangle', 0.16);
+                beep(659, 0.12, 'triangle', 0.12, 0.12);
             }
         }
 
         function oppositeDir(dir) {
             return (dir + 2) % 4;
+        }
+
+        function resolveMove(actor, dir) {
+            const dx = DIRS[dir][0];
+            const dy = DIRS[dir][1];
+            let nx = actor.col + dx;
+            const ny = actor.row + dy;
+            let wrapped = false;
+
+            if (ny < 0 || ny >= ROWS) return null;
+
+            if (nx < 0 && actor.row === TUNNEL_ROW && dir === 2) {
+                nx = COLS - 1;
+                wrapped = true;
+            } else if (nx >= COLS && actor.row === TUNNEL_ROW && dir === 0) {
+                nx = 0;
+                wrapped = true;
+            }
+
+            if (nx < 0 || nx >= COLS) return null;
+            if (maze[ny][nx] === 1) return null;
+            return { nx, ny, wrapped };
         }
 
         function makeActor(col, row, dir, speed, color, name) {
@@ -231,18 +257,25 @@
         }
 
         function startStep(actor, dir) {
-            const dx = DIRS[dir][0];
-            const dy = DIRS[dir][1];
-            const nx = actor.col + dx;
-            const ny = actor.row + dy;
-            if (!canMove(nx, ny)) return false;
+            const move = resolveMove(actor, dir);
+            if (!move) return false;
             actor.fromCol = actor.col;
             actor.fromRow = actor.row;
-            actor.toCol = nx;
-            actor.toRow = ny;
+            actor.toCol = move.nx;
+            actor.toRow = move.ny;
             actor.progress = 0;
             actor.moving = true;
             actor.dir = dir;
+            if (move.wrapped) {
+                actor.col = move.nx;
+                actor.row = move.ny;
+                actor.fromCol = move.nx;
+                actor.fromRow = move.ny;
+                actor.toCol = move.nx;
+                actor.toRow = move.ny;
+                actor.progress = 0;
+                actor.moving = false;
+            }
             if (actor.name === 'Pac-Man') sfx('move', dir);
             return true;
         }
@@ -268,12 +301,11 @@
             const target = targetForGhost(index);
             const options = [];
             for (let dir = 0; dir < 4; dir++) {
-                const nx = ghost.col + DIRS[dir][0];
-                const ny = ghost.row + DIRS[dir][1];
-                if (!canMove(nx, ny)) continue;
+                const move = resolveMove(ghost, dir);
+                if (!move) continue;
                 options.push({
                     dir,
-                    dist: directionDistance(nx, ny, target)
+                    dist: directionDistance(move.nx, move.ny, target)
                 });
             }
             if (!options.length) return ghost.dir;
@@ -313,14 +345,12 @@
                 return;
             }
 
-            const desired = DIRS[pacman.nextDir];
-            if (desired && canMove(pacman.col + desired[0], pacman.row + desired[1])) {
+            if (resolveMove(pacman, pacman.nextDir)) {
                 startStep(pacman, pacman.nextDir);
                 return;
             }
 
-            const current = DIRS[pacman.dir];
-            if (current && canMove(pacman.col + current[0], pacman.row + current[1])) {
+            if (resolveMove(pacman, pacman.dir)) {
                 startStep(pacman, pacman.dir);
             }
         }
@@ -462,7 +492,6 @@
         }
 
         function startGame() {
-            unlockAudio();
             if (gameState === 'gameover') {
                 score = 0;
                 lives = 3;
@@ -611,13 +640,12 @@
             const map = { ArrowRight: 0, ArrowUp: 1, ArrowLeft: 2, ArrowDown: 3 };
             if (map.hasOwnProperty(e.key)) {
                 e.preventDefault();
-                unlockAudio();
-                setDirection(map[e.key]);
+                unlockAudio().then(() => setDirection(map[e.key]));
             }
         });
 
         canvas.addEventListener('pointerdown', () => {
-            startGame();
+            unlockAudio().then(() => startGame());
         });
 
         document.addEventListener('pointerdown', () => {
@@ -628,8 +656,7 @@
             const btn = e.target.closest('button[data-dir]');
             if (!btn) return;
             e.preventDefault();
-            unlockAudio();
-            setDirection(Number(btn.dataset.dir));
+            unlockAudio().then(() => setDirection(Number(btn.dataset.dir)));
         });
 
         boot();

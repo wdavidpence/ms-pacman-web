@@ -516,18 +516,19 @@
 
         function panel(text) {
             ctx.save();
-            ctx.fillStyle = 'rgba(0,0,0,0.62)';
-            ctx.fillRect(42, 224, 364, 116);
+            ctx.fillStyle = 'rgba(0,0,0,0.66)';
+            ctx.fillRect(36, 216, 376, 136);
             ctx.strokeStyle = 'rgba(255,255,0,0.74)';
             ctx.lineWidth = 2;
-            ctx.strokeRect(42, 224, 364, 116);
+            ctx.strokeRect(36, 216, 376, 136);
             ctx.fillStyle = COLORS.text;
             ctx.textAlign = 'center';
             ctx.font = 'bold 17px Courier New';
-            ctx.fillText(text, canvas.width / 2, 258);
+            ctx.fillText(text, canvas.width / 2, 252);
             ctx.font = 'bold 12px Courier New';
-            ctx.fillText('Use keyboard arrows or the on-screen D-pad', canvas.width / 2, 284);
-            ctx.fillText('First tap also unlocks sound', canvas.width / 2, 304);
+            ctx.fillText('Use keyboard arrows or the on-screen D-pad', canvas.width / 2, 281);
+            ctx.fillText('Tap/click anywhere to start', canvas.width / 2, 303);
+            ctx.fillText('First tap also unlocks sound', canvas.width / 2, 325);
             ctx.restore();
         }
 
@@ -632,7 +633,7 @@
         function boot() {
             createMaze();
             resetActors();
-            statusEl.textContent = 'MS PAC-MAN • tap START or tap anywhere to begin';
+            statusEl.textContent = 'MS PAC-MAN • tap any arrow or tap anywhere to begin';
             lastFrameTime = 0;
             requestAnimationFrame(loop);
         }

@@ -110,6 +110,7 @@
         let lives = 3;
         let level = 1;
         let gameState = 'title'; // title | playing | gameover
+        let titlePrompt = 'start'; // start | resume | level
         let maze = [];
         let totalPellets = 0;
         let pelletsEaten = 0;
@@ -376,11 +377,13 @@
             sfx('die');
             if (lives <= 0) {
                 gameState = 'gameover';
+                titlePrompt = 'start';
                 statusEl.textContent = 'Game over';
             } else {
                 resetActors();
                 gameState = 'title';
-                statusEl.textContent = 'MS PAC-MAN • tap any arrow or tap anywhere to begin';
+                titlePrompt = 'resume';
+                statusEl.textContent = 'Life lost • tap any arrow or tap anywhere to resume';
             }
             return true;
         }
@@ -415,6 +418,7 @@
                 createMaze();
                 resetActors();
                 gameState = 'title';
+                titlePrompt = 'level';
                 statusEl.textContent = 'Level complete • tap arrows or D-pad to continue';
                 sfx('level');
             }
@@ -499,11 +503,13 @@
                 createMaze();
                 resetActors();
                 gameState = 'title';
+                titlePrompt = 'start';
                 statusEl.textContent = 'MS PAC-MAN • tap any arrow or tap anywhere to begin';
                 return;
             }
             if (gameState !== 'playing') {
                 gameState = 'playing';
+                titlePrompt = 'start';
                 statusEl.textContent = 'Playing';
                 sfx('start');
             }
@@ -514,7 +520,7 @@
             pacman.nextDir = dir;
         }
 
-        function panel(text) {
+        function panel(text, line2 = 'Use keyboard arrows or the on-screen D-pad', line3 = 'Tap/click anywhere to start', line4 = 'First tap also unlocks sound') {
             ctx.save();
             ctx.fillStyle = 'rgba(0,0,0,0.66)';
             ctx.fillRect(36, 216, 376, 136);
@@ -526,9 +532,9 @@
             ctx.font = 'bold 17px Courier New';
             ctx.fillText(text, canvas.width / 2, 252);
             ctx.font = 'bold 12px Courier New';
-            ctx.fillText('Use keyboard arrows or the on-screen D-pad', canvas.width / 2, 281);
-            ctx.fillText('Tap/click anywhere to start', canvas.width / 2, 303);
-            ctx.fillText('First tap also unlocks sound', canvas.width / 2, 325);
+            ctx.fillText(line2, canvas.width / 2, 281);
+            ctx.fillText(line3, canvas.width / 2, 303);
+            ctx.fillText(line4, canvas.width / 2, 325);
             ctx.restore();
         }
 
@@ -617,7 +623,15 @@
             ctx.font = 'bold 12px Courier New';
             ctx.fillText(`PELLETS ${totalPellets - pelletsEaten}`, 10, 38);
 
-            if (gameState === 'title') panel('TAP ANY ARROW / TAP ANYWHERE');
+            if (gameState === 'title') {
+                if (titlePrompt === 'resume') {
+                    panel('LIFE LOST • TAP ANY ARROW / TAP ANYWHERE TO RESUME', 'Use keyboard arrows or the on-screen D-pad', 'Tap/click anywhere to resume', 'Your score and level stay saved');
+                } else if (titlePrompt === 'level') {
+                    panel('LEVEL COMPLETE • TAP ANY ARROW / TAP ANYWHERE TO CONTINUE', 'Use keyboard arrows or the on-screen D-pad', 'Tap/click anywhere to continue', 'First tap also unlocks sound');
+                } else {
+                    panel('TAP ANY ARROW / TAP ANYWHERE TO START');
+                }
+            }
             if (gameState === 'gameover') panel('GAME OVER • TAP START TO RETRY');
         }
 

@@ -520,21 +520,19 @@
             pacman.nextDir = dir;
         }
 
-        function panel(text, line2 = 'Use keyboard arrows or the on-screen D-pad', line3 = 'Tap/click anywhere to start', line4 = 'First tap also unlocks sound') {
+        function panel(title, lines = []) {
             ctx.save();
-            ctx.fillStyle = 'rgba(0,0,0,0.66)';
-            ctx.fillRect(36, 216, 376, 136);
+            ctx.fillStyle = 'rgba(0,0,0,0.72)';
+            ctx.fillRect(28, 206, 392, 154);
             ctx.strokeStyle = 'rgba(255,255,0,0.74)';
             ctx.lineWidth = 2;
-            ctx.strokeRect(36, 216, 376, 136);
+            ctx.strokeRect(28, 206, 392, 154);
             ctx.fillStyle = COLORS.text;
             ctx.textAlign = 'center';
-            ctx.font = 'bold 17px Courier New';
-            ctx.fillText(text, canvas.width / 2, 252);
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillText(title, canvas.width / 2, 246);
             ctx.font = 'bold 12px Courier New';
-            ctx.fillText(line2, canvas.width / 2, 281);
-            ctx.fillText(line3, canvas.width / 2, 303);
-            ctx.fillText(line4, canvas.width / 2, 325);
+            lines.forEach((line, index) => ctx.fillText(line, canvas.width / 2, 276 + index * 20));
             ctx.restore();
         }
 
@@ -625,11 +623,23 @@
 
             if (gameState === 'title') {
                 if (titlePrompt === 'resume') {
-                    panel('LIFE LOST • TAP ANY ARROW / TAP ANYWHERE TO RESUME', 'Use keyboard arrows or the on-screen D-pad', 'Tap/click anywhere to resume', 'Your score and level stay saved');
+                    panel('LIFE LOST • TAP ANY ARROW / TAP ANYWHERE TO RESUME', [
+                        'Use keyboard arrows or the on-screen D-pad',
+                        'Tap/click anywhere to resume',
+                        'Your score and level stay saved'
+                    ]);
                 } else if (titlePrompt === 'level') {
-                    panel('LEVEL COMPLETE • TAP ANY ARROW / TAP ANYWHERE TO CONTINUE', 'Use keyboard arrows or the on-screen D-pad', 'Tap/click anywhere to continue', 'First tap also unlocks sound');
+                    panel('LEVEL COMPLETE • TAP ANY ARROW / TAP ANYWHERE TO CONTINUE', [
+                        'Use keyboard arrows or the on-screen D-pad',
+                        'Tap/click anywhere to continue',
+                        'First tap also unlocks sound'
+                    ]);
                 } else {
-                    panel('TAP ANY ARROW / TAP ANYWHERE TO START');
+                    panel('TAP ANY ARROW / TAP ANYWHERE TO START', [
+                        'Use keyboard arrows or the on-screen D-pad',
+                        'Tap/click anywhere to start',
+                        'First tap also unlocks sound'
+                    ]);
                 }
             }
             if (gameState === 'gameover') panel('GAME OVER • TAP START TO RETRY');

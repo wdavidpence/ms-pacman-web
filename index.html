@@ -128,6 +128,19 @@
             [587, 0, 440, 0],
             [659, 0, 494, 0]
         ];
+        const SCATTER_CHASE_SCHEDULE = [
+            { mode: 'scatter', duration: 7 },
+            { mode: 'chase', duration: 20 },
+            { mode: 'scatter', duration: 7 },
+            { mode: 'chase', duration: 20 },
+            { mode: 'scatter', duration: 5 },
+            { mode: 'chase', duration: 20 },
+            { mode: 'scatter', duration: 5 },
+            { mode: 'chase', duration: Infinity }
+        ];
+        let scheduleIndex = 0;
+        let scheduleTimer = 0;
+        let houseDelays = [0, 120, 240, 360]; // frames until each ghost leaves house (Blinky immediate, Pinky 2s, Inky 4s, Clyde 6s)
 
         async function unlockAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
@@ -326,7 +339,8 @@
                 maze[pacman.row][pacman.col] = 0;
                 score += 50;
                 pelletsEaten++;
-                powerTimer = 7;
+                const levelDuration = Math.max(120, 480 - (level - 1) * 60);
+                powerTimer = levelDuration / 60;
                 sfx('power');
             }
             if (cell === 2 || cell === 3) {
@@ -357,6 +371,16 @@
         }
 
         function updateGhost(ghost, index, dt) {
+            // House delay: ghosts wait before leaving the ghost house
+            if (ghost.inHouse) {
+                ghost.houseTicks -= dt * 60; // convert seconds to frames
+                if (ghost.houseTicks <= 0) {
+                    ghost.inHouse = false;
+                    resetActorTo(ghost, 14, 14); // release from house
+                }
+                return;
+            }
+
             const landed = advanceActor(ghost, dt);
             if (landed) {
                 ghost.anim += 1;
@@ -369,7 +393,8 @@
         function handleCollision(ghost) {
             if (powerTimer > 0) {
                 score += 200;
-                resetActorTo(ghost, 14, 17);
+                ghost.inHouse = true;
+                ghost.houseTicks = houseDelays[ghosts.indexOf(ghost)];
                 sfx('ghost');
                 return true;
             }
@@ -404,6 +429,16 @@
         function update(dt) {
             if (gameState !== 'playing') return;
 
+            // Scatter/chase cycle
+            if (powerTimer <= 0) {
+                scheduleTimer += dt;
+                const currentPhase = SCATTER_CHASE_SCHEDULE[scheduleIndex];
+                if (scheduleTimer >= currentPhase.duration) {
+                    scheduleTimer = 0;
+                    scheduleIndex = (scheduleIndex + 1) % SCATTER_CHASE_SCHEDULE.length;
+                }
+            }
+
             updatePacman(dt);
             ghosts.forEach((ghost, index) => updateGhost(ghost, index, dt));
 
@@ -417,9 +452,8 @@
                 level++;
                 createMaze();
                 resetActors();
-                gameState = 'title';
-                titlePrompt = 'level';
-                statusEl.textContent = 'Level complete • tap arrows or D-pad to continue';
+                gameState = 'playing';
+                statusEl.textContent = 'Level ' + level;
                 sfx('level');
             }
         }
@@ -472,12 +506,15 @@
             pacman = makeActor(14, 26, 0, PACMAN_SPEED, COLORS.pacman, 'Pac-Man');
             pacman.nextDir = 0;
             powerTimer = 0;
+            scheduleIndex = 0;
+            scheduleTimer = 0;
             ghosts = [
                 makeActor(14, 14, 0, GHOST_SPEEDS[0], COLORS.red, 'Blinky'),
                 makeActor(12, 17, 1, GHOST_SPEEDS[1], COLORS.pink, 'Pinky'),
                 makeActor(14, 17, 2, GHOST_SPEEDS[2], COLORS.cyan, 'Inky'),
                 makeActor(16, 17, 3, GHOST_SPEEDS[3], COLORS.orange, 'Clyde')
             ];
+            ghosts.forEach((g, i) => { g.houseTicks = houseDelays[i]; g.inHouse = true; });
         }
 
         function canMove(x, y) {
@@ -486,6 +523,13 @@
 
         function targetForGhost(index) {
             if (powerTimer > 0) return { x: 27 - pacman.col, y: 30 - pacman.row };
+            const currentPhase = SCATTER_CHASE_SCHEDULE[scheduleIndex];
+            const isScatter = currentPhase.mode === 'scatter';
+            if (isScatter) {
+                // Scatter targets: corners of the maze
+                const scatterTargets = [{ x: 25, y: 0 }, { x: 2, y: 0 }, { x: 27, y: 30 }, { x: 27, y: 30 }];
+                return scatterTargets[index];
+            }
             if (index === 0) return { x: pacman.col, y: pacman.row };
             if (index === 1) {
                 const d = DIRS[pacman.dir];
@@ -497,9 +541,10 @@
 
         function startGame() {
             if (gameState === 'gameover') {
+                const savedLevel = level;
                 score = 0;
                 lives = 3;
-                level = 1;
+                level = savedLevel;
                 createMaze();
                 resetActors();
                 gameState = 'title';
@@ -597,7 +642,7 @@
 
             const frightened = powerTimer > 0;
             ghosts.forEach(g => {
-                const pos = actorDisplayPosition(g);
+                const pos = g.inHouse ? { x: g.toCol * TILE + 8, y: g.toRow * TILE + 8 } : actorDisplayPosition(g);
                 ctx.fillStyle = frightened ? '#1e5cff' : g.color;
                 ctx.beginPath();
                 ctx.arc(pos.x, pos.y - 1, 7, Math.PI, 0);

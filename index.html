@@ -380,7 +380,7 @@
             } else {
                 resetActors();
                 gameState = 'title';
-                statusEl.textContent = 'MS PAC-MAN • tap arrows or D-pad to start';
+                statusEl.textContent = 'MS PAC-MAN • tap any arrow or tap anywhere to begin';
             }
             return true;
         }
@@ -499,7 +499,7 @@
                 createMaze();
                 resetActors();
                 gameState = 'title';
-                statusEl.textContent = 'MS PAC-MAN • tap arrows or D-pad to start';
+                statusEl.textContent = 'MS PAC-MAN • tap any arrow or tap anywhere to begin';
                 return;
             }
             if (gameState !== 'playing') {
@@ -516,17 +516,18 @@
 
         function panel(text) {
             ctx.save();
-            ctx.fillStyle = 'rgba(0,0,0,0.55)';
-            ctx.fillRect(54, 230, 340, 96);
-            ctx.strokeStyle = 'rgba(255,255,0,0.7)';
+            ctx.fillStyle = 'rgba(0,0,0,0.62)';
+            ctx.fillRect(42, 224, 364, 116);
+            ctx.strokeStyle = 'rgba(255,255,0,0.74)';
             ctx.lineWidth = 2;
-            ctx.strokeRect(54, 230, 340, 96);
+            ctx.strokeRect(42, 224, 364, 116);
             ctx.fillStyle = COLORS.text;
-            ctx.font = 'bold 18px Courier New';
             ctx.textAlign = 'center';
-            ctx.fillText(text, canvas.width / 2, 268);
-            ctx.font = 'bold 13px Courier New';
-            ctx.fillText('Lower-left D-pad • keyboard arrows • first touch unlocks sound', canvas.width / 2, 292);
+            ctx.font = 'bold 17px Courier New';
+            ctx.fillText(text, canvas.width / 2, 258);
+            ctx.font = 'bold 12px Courier New';
+            ctx.fillText('Use keyboard arrows or the on-screen D-pad', canvas.width / 2, 284);
+            ctx.fillText('First tap also unlocks sound', canvas.width / 2, 304);
             ctx.restore();
         }
 
@@ -615,7 +616,7 @@
             ctx.font = 'bold 12px Courier New';
             ctx.fillText(`PELLETS ${totalPellets - pelletsEaten}`, 10, 38);
 
-            if (gameState === 'title') panel('TAP START / PRESS ANY ARROW');
+            if (gameState === 'title') panel('TAP ANY ARROW / TAP ANYWHERE');
             if (gameState === 'gameover') panel('GAME OVER • TAP START TO RETRY');
         }
 
@@ -631,7 +632,7 @@
         function boot() {
             createMaze();
             resetActors();
-            statusEl.textContent = 'MS PAC-MAN • tap arrows or D-pad to start';
+            statusEl.textContent = 'MS PAC-MAN • tap START or tap anywhere to begin';
             lastFrameTime = 0;
             requestAnimationFrame(loop);
         }

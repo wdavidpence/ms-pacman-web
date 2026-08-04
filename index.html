@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MS. PAC-MAN</title>
+<title>MS. PAC-MAN v1.2.0</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -17,7 +17,7 @@ canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(100vw,72
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v1.2.0 • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -40,6 +40,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
+const GAME_VERSION = '1.2.0';
 
 // --- state ---
 let audioCtx=null, sirenOsc=null, sirenGain=null, frightTimer=null;
@@ -739,7 +740,7 @@ function draw(){
 
   if(gameState==='title'){
     if(titlePrompt==='resume') panel('READY!', ['Tap D-pad or arrows to continue']);
-    else panel('MS. PAC-MAN', ['Tap D-pad / arrows / screen to start', 'Eat dots • Avoid ghosts • Grab fruit']);
+    else panel('MS. PAC-MAN', [`VERSION ${GAME_VERSION}`, 'Tap D-pad / arrows / screen to start', 'Eat dots • Avoid ghosts • Grab fruit']);
   }
   if(gameState==='gameover') panel('GAME OVER', [`SCORE ${score}`, 'Tap to play again']);
   if(gameState==='death' && deathT>0.2){
@@ -779,7 +780,7 @@ function setDirection(dir){
 function boot(){
   createMaze();
   resetActors();
-  statusEl.textContent='MS. PAC-MAN • arcade-style build';
+  statusEl.textContent=`MS. PAC-MAN v${GAME_VERSION} • arcade-style build`;
   requestAnimationFrame(loop);
 }
 

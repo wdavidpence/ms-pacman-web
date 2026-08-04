@@ -650,8 +650,12 @@ function drawGhost(g){
 function drawFruit(){
   if(!fruit||!fruit.active) return;
   const p=posOf(fruit);
+  ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.stroke();
   ctx.fillStyle=fruit.color;
   ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.arc(p.x-1.8,p.y-2,1.6,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#0f0';
   ctx.fillRect(p.x-1,p.y-7,2,4);
 }

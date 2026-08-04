@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>MS. PAC-MAN v1.2.0</title>
+<title>MS. PAC-MAN v1.2.1</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
-canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(100vw,720px);max-height:100vh;width:auto;height:auto;background:#000}
+canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(calc(100vw - 6px),720px);max-height:100vh;width:auto;height:auto;background:#000}
 .status{position:fixed;top:8px;left:0;width:100%;color:#ffb8ff;text-align:center;font-size:13px;pointer-events:none;text-shadow:0 0 6px #000;z-index:5}
 #controls{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:170px;height:170px;z-index:10}
 .dpad{position:absolute;width:52px;height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(33,33,222,.35);color:#fff;font-size:24px;line-height:1}
@@ -17,7 +17,7 @@ canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(100vw,72
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v1.2.0 • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v1.2.1 • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -40,7 +40,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '1.2.0';
+const GAME_VERSION = '1.2.1';
 
 // --- state ---
 let audioCtx=null, sirenOsc=null, sirenGain=null, frightTimer=null;
@@ -52,8 +52,8 @@ let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, deathT=0;
 let scheduleIndex=0, scheduleTimer=0;
 let intermission=null; // {act, t, dur}
 const TUNNEL_ROW = 14;
-const PAC_SPEED = 7.2; // tiles/sec-ish via progress
-const GHOST_BASE = [6.4, 6.2, 6.0, 5.8];
+const PAC_SPEED = 11.0; // arcade tempo (tiles/sec)
+const GHOST_BASE = [10.0, 9.8, 9.6, 9.4];
 
 // Classic scatter/chase timing (seconds)
 const SCHEDULE = [
@@ -245,7 +245,7 @@ function startStep(actor, dir, forGhost){
 }
 function advance(actor, dt){
   if(!actor.moving) return false;
-  actor.progress += dt * actor.speed / 6; // tuned
+  actor.progress += dt * actor.speed;
   if(actor.progress<1) return false;
   actor.col=actor.toCol; actor.row=actor.toRow;
   actor.fromCol=actor.col; actor.fromRow=actor.row;

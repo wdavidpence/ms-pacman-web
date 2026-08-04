@@ -49,6 +49,7 @@ let gameState='title'; // title|playing|death|intermission|gameover
 let titlePrompt='start';
 let maze=[], totalPellets=0, pelletsEaten=0, powerTimer=0, ghostCombo=0;
 let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, deathT=0;
+let scorePopups=[]; // {x,y,text,t}
 let scheduleIndex=0, scheduleTimer=0;
 let intermission=null; // {act, t, dur}
 const TUNNEL_ROW = 14;
@@ -325,6 +326,8 @@ function updateFruit(dt){
   if((fp.x-pp.x)**2+(fp.y-pp.y)**2 < 100){
     score += fruit.pts;
     sfx('fruit');
+    // spawn floating score popup at fruit position
+    scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.pts}`, t:1.0});
     fruit=null;
     checkExtra();
     return;
@@ -527,6 +530,13 @@ function update(dt){
   updateFruit(dt);
   if(powerTimer>0) powerTimer=Math.max(0,powerTimer-dt);
   if(powerTimer===0) ghostCombo=0;
+  // update score popups
+  for(let i=scorePopups.length-1;i>=0;i--){
+    const p=scorePopups[i];
+    p.t -= dt;
+    p.y -= 20*dt; // float up
+    if(p.t<=0) scorePopups.splice(i,1);
+  }
   collide();
   updateSiren();
 }
@@ -723,6 +733,17 @@ function draw(){
   drawWalls();
   drawDots();
   drawFruit();
+  // score popups (floating text at eaten fruit)
+  for(const p of scorePopups){
+    const alpha = Math.max(0, Math.min(1, p.t * 2)); // fade in fast, hold, fade out
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle='#ffff00';
+    ctx.font='bold 12px Courier New';
+    ctx.textAlign='center';
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  }
   if(gameState!=='death' || Math.floor(deathT*10)%2===0) drawMsPac();
   ghosts.forEach(drawGhost);
 

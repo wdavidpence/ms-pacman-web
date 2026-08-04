@@ -753,6 +753,11 @@ function draw(){
   if(gameState!=='death' || Math.floor(deathT*10)%2===0) drawMsPac();
   ghosts.forEach(drawGhost);
 
+  // HUD backdrop for readability
+  ctx.fillStyle='rgba(0,0,0,.65)';
+  ctx.fillRect(4,2,136,18);
+  ctx.fillRect(156,2,100,18);
+  ctx.fillRect(316,2,56,18);
   ctx.fillStyle=COLORS.text;
   ctx.font='bold 14px Courier New';
   ctx.textAlign='left';

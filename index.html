@@ -11,7 +11,7 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
 canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(calc(100vw - 6px),720px);max-height:100vh;width:auto;height:auto;background:#000}
-.status{position:fixed;top:8px;left:0;width:100%;color:#ffb8ff;text-align:center;font-size:13px;pointer-events:none;text-shadow:0 0 6px #000;z-index:5}
+.status{position:fixed;top:8px;left:0;width:100%;color:#ffb8ff;text-align:center;font-size:15px;font-weight:bold;pointer-events:none;text-shadow:0 0 8px #2121de,0 2px 4px #000;z-index:5}
 #controls{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:170px;height:170px;z-index:10}
 .dpad{position:absolute;width:52px;height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(33,33,222,.35);color:#fff;font-size:24px;line-height:1}
 .dpad:active{background:rgba(255,184,255,.35);transform:scale(.96)}
@@ -406,7 +406,7 @@ function collide(){
     if(g.eaten) continue;
     // death
     lives--; sfx('die'); stopSiren();
-    gameState='death'; deathT=1.4;
+    gameState='death'; deathT=2.0;
     return;
   }
 }
@@ -645,13 +645,13 @@ function drawSpriteGhost(x,y,col){
 }
 
 function panel(title, lines=[]){
-  ctx.fillStyle='rgba(0,0,0,.78)';
-  ctx.fillRect(24,200,400,160);
-  ctx.strokeStyle='#ffb8ff'; ctx.lineWidth=2; ctx.strokeRect(24,200,400,160);
-  ctx.fillStyle=COLORS.text; ctx.textAlign='center';
-  ctx.font='bold 15px Courier New'; ctx.fillText(title, canvas.width/2, 240);
-  ctx.font='12px Courier New';
-  lines.forEach((l,i)=>ctx.fillText(l, canvas.width/2, 272+i*20));
+  ctx.fillStyle='rgba(0,0,0,.85)';
+  ctx.fillRect(24,190,400,180);
+  ctx.strokeStyle='#ffb8ff'; ctx.lineWidth=2; ctx.strokeRect(24,190,400,180);
+  ctx.fillStyle='#fff'; ctx.textAlign='center';
+  ctx.font='bold 20px Courier New'; ctx.fillText(title, canvas.width/2, 235);
+  ctx.font='bold 14px Courier New';
+  lines.forEach((l,i)=>ctx.fillText(l, canvas.width/2, 265+i*24));
 }
 
 function draw(){
@@ -672,7 +672,20 @@ function draw(){
     ctx.fillText(p.text, p.x, p.y);
     ctx.restore();
   }
-  if(gameState!=='death' || Math.floor(deathT*10)%2===0) drawMsPac();
+  if(gameState!=='death'){ drawMsPac(); }
+  else if(deathT > 0.5){
+    // Death animation: mouth opens wide, then eyes look up
+    const px = pacman.x, py = pacman.y;
+    ctx.fillStyle='#ffff00';
+    ctx.beginPath();
+    ctx.arc(px, py, TILE/2-2, 0.3*Math.PI, 1.7*Math.PI);
+    ctx.lineTo(px, py);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(px-4, py-5, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px+4, py-5, 2.5, 0, Math.PI*2); ctx.fill();
+  }
   ghosts.forEach(drawGhost);
 
   // HUD backdrop for readability

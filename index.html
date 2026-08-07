@@ -289,6 +289,7 @@ function checkExtra(){
   const threshold = Math.floor(score/10000)*10000;
   if(!extraLife && score>=threshold+10000){
     lives++; extraLife=true; sfx('extra');
+    tunnelFlash=0.6; // bright screen flash on extra life
   }
   if(score>high){ high=score; localStorage.setItem('mspacHigh', String(high)); }
 }
@@ -499,7 +500,7 @@ function drawWalls(){
   // soft corridor look: fill wall cells then outline
   for(let y=0;y<ROWS;y++){
     for(let x=0;x<COLS;x++){
-      if(maze[y][x]!==1 && maze[y][x]!==4) continue;
+      if(maze[y][x]!==1 && maze[y][x]!==4 && maze[y][x]!==5) continue;
       const px=x*TILE, py=y*TILE;
       if(maze[y][x]===4){
         // Pink door with frame
@@ -509,6 +510,15 @@ function drawWalls(){
         ctx.fillRect(px+3, py+2, TILE-6, TILE-4);
         ctx.fillStyle='#ffb8ff';
         ctx.fillRect(px+TILE/2-1, py+2, 2, TILE-4);
+        continue;
+      }
+      if(maze[y][x]===5){
+        // Ghost house interior: dark room with subtle border
+        ctx.fillStyle='rgba(30,0,40,0.5)';
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.strokeStyle='rgba(100,50,120,0.3)';
+        ctx.lineWidth=1;
+        ctx.strokeRect(px+1, py+1, TILE-2, TILE-2);
         continue;
       }
       ctx.fillStyle=COLORS.wall;

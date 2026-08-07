@@ -744,15 +744,16 @@ function draw(){
   ctx.fillRect(0,TUNNEL_ROW*TILE,canvas.width,TILE);
   drawDots();
   drawFruit();
-  // score popups (floating text at eaten fruit)
+  // score popups (floating text at eaten fruit) - rise animation
   for(const p of scorePopups){
-    const alpha = Math.max(0, Math.min(1, p.t * 2)); // fade in fast, hold, fade out
+    const alpha = Math.max(0, Math.min(1, p.t * 2));
+    const rise = (1 - p.t) * 20; // rises 20px over lifetime
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = p.color || '#ffff00';
     ctx.font='bold 12px Courier New';
     ctx.textAlign='center';
-    ctx.fillText(p.text, p.x, p.y);
+    ctx.fillText(p.text, p.x, p.y - rise);
     ctx.restore();
   }
   if(gameState!=='death'){ drawMsPac(); }

@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v1.3.2</title>
+<title>MS. PAC-MAN v1.3.3</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -19,7 +19,7 @@ canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(calc(100
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v1.3.2 • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v1.3.3 • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -43,7 +43,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '1.3.2';
+const GAME_VERSION = '1.3.3';
 
 // --- state ---
 let score=0, high=+localStorage.getItem('mspacHigh')||0, lives=3, level=1, extraLife=false;
@@ -56,6 +56,7 @@ let scheduleIndex=0, scheduleTimer=0;
 let intermission=null; // {act, t, dur}
 let readyTimer=0; // countdown before gameplay
 let tunnelFlash=0; // tunnel wrap flash timer
+let scoreFlash=0; // brief HUD flash on score change
 const TUNNEL_ROW = 14;
 const PAC_SPEED = 11.0; // arcade tempo (tiles/sec)
 const GHOST_BASE = [10.0, 9.8, 9.6, 9.4];
@@ -253,8 +254,8 @@ function updateFruit(dt){
   if((fp.x-pp.x)**2+(fp.y-pp.y)**2 < 100){
     score += fruit.pts;
     sfx('fruit');
-    // spawn floating score popup at fruit position
-    scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.pts}`, t:1.0});
+    // spawn floating score popup at fruit position with name
+    scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.name} ${fruit.pts}`, t:1.0});
     fruit=null;
     checkExtra();
     return;
@@ -295,11 +296,11 @@ function checkExtra(){
 function handlePellet(){
   const c=maze[pacman.row][pacman.col];
   if(c===2){
-    maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; sfx('waka'); checkExtra();
+    maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; sfx('waka'); scoreFlash=0.15; checkExtra();
     // fruit triggers at ~70 and ~170 pellets classic-ish
     if(pelletsEaten===70 || pelletsEaten===170) spawnFruit();
   } else if(c===3){
-    maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++;
+    maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++; scoreFlash=0.2;
     powerTimer = Math.max(4, 9 - (level-1)*0.7);
     ghostCombo=0;
     ghosts.forEach(g=>{ if(!g.eaten && !g.inHouse) g.dir=opposite(g.dir); });
@@ -460,6 +461,8 @@ function update(dt){
 
   // tunnel flash decay
   if(tunnelFlash>0) tunnelFlash=Math.max(0,tunnelFlash-dt);
+  // score flash decay
+  if(scoreFlash>0) scoreFlash=Math.max(0,scoreFlash-dt);
 
   // scatter/chase clock
   if(powerTimer<=0){
@@ -495,8 +498,13 @@ function drawWalls(){
       if(maze[y][x]!==1 && maze[y][x]!==4) continue;
       const px=x*TILE, py=y*TILE;
       if(maze[y][x]===4){
+        // Pink door with frame
         ctx.fillStyle='#ffb8ff';
-        ctx.fillRect(px+2, py+TILE/2-1, TILE-4, 2);
+        ctx.fillRect(px+1, py+1, TILE-2, TILE-2);
+        ctx.fillStyle='#000';
+        ctx.fillRect(px+3, py+2, TILE-6, TILE-4);
+        ctx.fillStyle='#ffb8ff';
+        ctx.fillRect(px+TILE/2-1, py+2, 2, TILE-4);
         continue;
       }
       ctx.fillStyle=COLORS.wall;
@@ -541,7 +549,7 @@ function drawMsPac(){
   // body
   ctx.fillStyle=COLORS.pac;
   ctx.beginPath();
-  const mouth=0.15+Math.abs(Math.sin(pacman.anim))*0.35;
+  const mouth=0.1+Math.abs(Math.sin(pacman.anim))*0.45;
   ctx.arc(0,0,7.5,mouth,Math.PI*2-mouth);
   ctx.lineTo(0,0); ctx.fill();
   ctx.restore();
@@ -713,6 +721,9 @@ function draw(){
     ctx.fillRect(0,TUNNEL_ROW*TILE,8,TILE);
     ctx.fillRect((COLS-1)*TILE,TUNNEL_ROW*TILE,8,TILE);
   }
+  // tunnel row darker background
+  ctx.fillStyle='rgba(0,0,20,0.3)';
+  ctx.fillRect(0,TUNNEL_ROW*TILE,canvas.width,TILE);
   drawDots();
   drawFruit();
   // score popups (floating text at eaten fruit)
@@ -747,10 +758,11 @@ function draw(){
   ctx.fillRect(4,2,136,18);
   ctx.fillRect(156,2,100,18);
   ctx.fillRect(316,2,56,18);
-  ctx.fillStyle=COLORS.text;
+  ctx.fillStyle=scoreFlash>0?'#fff':COLORS.text;
   ctx.font='bold 14px Courier New';
   ctx.textAlign='left';
   ctx.fillText(`SCORE ${String(score).padStart(6,'0')}`, 8, 18);
+  ctx.fillStyle=COLORS.text;
   ctx.fillText(`HIGH ${String(high).padStart(6,'0')}`, 160, 18);
   ctx.fillText(`LV ${level}`, 320, 18);
   // lives as Pac-Man sprites at bottom-left
@@ -761,12 +773,66 @@ function draw(){
   }
 
   if(gameState==='title'){
+    // Attract mode: animated Pac-Man chasing ghost across screen
+    const t = performance.now() / 1000;
+    const ax = ((t * 40) % (canvas.width + 80)) - 40;
+    const ay = canvas.height / 2 + 60;
+    // Pac-Man
+    ctx.fillStyle = COLORS.pac;
+    ctx.beginPath();
+    const am = 0.1 + Math.abs(Math.sin(t * 8)) * 0.45;
+    ctx.arc(ax, ay, 7, am, Math.PI * 2 - am);
+    ctx.lineTo(ax, ay);
+    ctx.fill();
+    // Ghost being chased
+    ctx.fillStyle = COLORS.blinky;
+    ctx.beginPath();
+    ctx.arc(ax + 30, ay - 1, 7.5, Math.PI, 0);
+    ctx.lineTo(ax + 37.5, ay + 6);
+    ctx.closePath();
+    ctx.fill();
+    // Ghost eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ax + 28, ay - 3, 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax + 32, ay - 3, 2.3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2121ff';
+    ctx.beginPath(); ctx.arc(ax + 28.5, ay - 3, 1.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ax + 32.5, ay - 3, 1.1, 0, Math.PI * 2); ctx.fill();
+
     if(titlePrompt==='resume') panel('READY!', ['Tap D-pad or arrows to continue']);
     else panel('MS. PAC-MAN', [`VERSION ${GAME_VERSION}`, 'Tap D-pad / arrows / screen to start', 'Eat dots • Avoid ghosts • Grab fruit']);
   }
   if(gameState==='ready') panel('READY!', [`LEVEL ${level}`, `SCORE ${String(score).padStart(6,'0')}`]);
   if(gameState==='gameover'){
     const isNewHigh = score >= high && score > 0;
+    // Animated death replay: Pac-Man mouth opens wide, ghost approaches
+    const t = performance.now() / 1000;
+    const gx = canvas.width/2 + Math.sin(t*1.5)*30;
+    const gy = 260 + Math.cos(t*2)*5;
+    // Ghost approaching
+    ctx.fillStyle = COLORS.blinky;
+    ctx.beginPath();
+    ctx.arc(gx, gy, 7.5, Math.PI, 0);
+    ctx.lineTo(gx+7.5, gy+7);
+    ctx.closePath();
+    ctx.fill();
+    // Ghost eyes looking at Pac-Man
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(gx-3, gy-2, 2.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+3, gy-2, 2.3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#2121ff';
+    ctx.beginPath(); ctx.arc(gx-2, gy-2, 1.1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+4, gy-2, 1.1, 0, Math.PI*2); ctx.fill();
+    // Pac-Man with wide open mouth (dying)
+    const px = canvas.width/2 - 15;
+    const py = 260;
+    ctx.fillStyle = COLORS.pac;
+    ctx.beginPath();
+    const dm = 0.2 + Math.abs(Math.sin(t*6))*0.5;
+    ctx.arc(px, py, 7.5, dm, Math.PI*2-dm);
+    ctx.lineTo(px, py);
+    ctx.fill();
+
     panel('GAME OVER', [
       `SCORE ${String(score).padStart(6,'0')}`,
       `HIGH  ${String(high).padStart(6,'0')}${isNewHigh ? ' ★ NEW!' : ''}`,

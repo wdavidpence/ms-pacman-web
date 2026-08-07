@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v1.3.1</title>
+<title>MS. PAC-MAN v1.3.2</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -19,7 +19,7 @@ canvas{border:3px solid #2121de;image-rendering:pixelated;max-width:min(calc(100
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v1.3.1 • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v1.3.2 • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -43,7 +43,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '1.3.1';
+const GAME_VERSION = '1.3.2';
 
 // --- state ---
 let score=0, high=+localStorage.getItem('mspacHigh')||0, lives=3, level=1, extraLife=false;
@@ -284,7 +284,9 @@ function updateFruit(dt){
 }
 
 function checkExtra(){
-  if(!extraLife && score>=10000){
+  // Extra life every 10k points (arcade standard)
+  const threshold = Math.floor(score/10000)*10000;
+  if(!extraLife && score>=threshold+10000){
     lives++; extraLife=true; sfx('extra');
   }
   if(score>high){ high=score; localStorage.setItem('mspacHigh', String(high)); }
@@ -308,6 +310,7 @@ function handlePellet(){
     score += 0; // bonus handled in intermission start
     stopSiren();
     sfx('level');
+    tunnelFlash=0.5; // brief screen flash on level clear
     startIntermissionOrNext();
   }
 }
@@ -358,6 +361,8 @@ function updateGhost(g,i,dt){
       g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11;
       g.moving=false; g.dir=1;
     }
+    // bounce animation while in house
+    g.anim = (g.anim||0) + dt;
     return;
   }
   // return home when eaten
@@ -403,6 +408,9 @@ function collide(){
       ghostCombo++;
       const pts = 200 * Math.pow(2, Math.min(3,ghostCombo-1));
       score += pts;
+      // floating score popup at ghost position
+      const gp = posOf(g);
+      scorePopups.push({x:gp.x, y:gp.y-8, text:`${pts}`, t:1.0});
       g.eaten=true; sfx('ghost'); checkExtra();
       return;
     }
@@ -537,13 +545,16 @@ function drawMsPac(){
   ctx.arc(0,0,7.5,mouth,Math.PI*2-mouth);
   ctx.lineTo(0,0); ctx.fill();
   ctx.restore();
-  // bow (screen-space, not rotated with mouth)
+  // bow (screen-space, not rotated with mouth) — larger, more visible
   ctx.save();
   ctx.translate(p.x,p.y);
   ctx.fillStyle=COLORS.bow;
-  ctx.beginPath(); ctx.arc(-2.5,-8.2,2.1,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(2.2,-8.0,2.1,0,Math.PI*2); ctx.fill();
-  ctx.fillRect(-1.2,-9.2,2.4,2.2);
+  // left loop
+  ctx.beginPath(); ctx.arc(-3,-9,2.8,0,Math.PI*2); ctx.fill();
+  // right loop
+  ctx.beginPath(); ctx.arc(3,-9,2.8,0,Math.PI*2); ctx.fill();
+  // center knot
+  ctx.fillRect(-1.5,-10,3,2.8);
   // mole
   ctx.fillStyle='#ff80c0';
   ctx.beginPath(); ctx.arc(3.5,1.5,1.1,0,Math.PI*2); ctx.fill();
@@ -579,7 +590,13 @@ function drawGhost(g){
   ctx.beginPath(); ctx.arc(p.x-3,p.y-2,2.3,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(p.x+3,p.y-2,2.3,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=scared?'#ffb8ff':'#2121ff';
-  const ed=DIRS[g.dir];
+  // Frightened ghosts look at Pac-Man; others look in movement direction
+  let ed=DIRS[g.dir];
+  if(scared && pacman){
+    const dx=pacman.x-p.x, dy=pacman.y-p.y;
+    const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+    ed=[dx/d, dy/d];
+  }
   ctx.beginPath(); ctx.arc(p.x-3+ed[0]*1.2,p.y-2+ed[1]*1.2,1.1,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(p.x+3+ed[0]*1.2,p.y-2+ed[1]*1.2,1.1,0,Math.PI*2); ctx.fill();
   if(scared && !flash){
@@ -753,6 +770,7 @@ function draw(){
     panel('GAME OVER', [
       `SCORE ${String(score).padStart(6,'0')}`,
       `HIGH  ${String(high).padStart(6,'0')}${isNewHigh ? ' ★ NEW!' : ''}`,
+      `LEVEL ${level} • LIVES ${lives}`,
       'Tap to play again'
     ]);
   }

@@ -63,7 +63,8 @@ let tunnelFlash=0; // tunnel wrap flash timer
 let scoreFlash=0; // brief HUD flash on score change
 let shakeX=0, shakeY=0, shakeT=0; // screen shake state
 const TUNNEL_ROW = 14;
-const PAC_SPEED = 11.0; // arcade tempo (tiles/sec)
+const PAC_SPEED = 12.0; // Ms. Pac-Man is faster than Pac-Man (11.0)
+const PAC_SPEED_POWER = 14.0; // Speed boost during power pellet (arcade-faithful)
 const GHOST_BASE = [10.0, 9.8, 9.6, 9.4];
 
 // Ms. Pac-Man ghosts NEVER scatter during gameplay - they always chase (more aggressive)
@@ -423,11 +424,18 @@ function nextLevel(){
 }
 
 function updatePac(dt){
+  // Ms. Pac-Man speed increases during power pellet (arcade-faithful)
+  const effectiveSpeed = powerTimer > 0 ? PAC_SPEED_POWER : PAC_SPEED;
+
   const landed=advance(pacman,dt);
   if(landed){ pacman.anim++; handlePellet(); }
   if(pacman.moving){ pacman.anim+=dt*12; return; }
+  // Use effective speed for movement step
+  const origSpeed = pacman.speed;
+  pacman.speed = effectiveSpeed;
   if(resolveMove(pacman,pacman.nextDir,false)) startStep(pacman,pacman.nextDir,false);
   else if(resolveMove(pacman,pacman.dir,false)) startStep(pacman,pacman.dir,false);
+  pacman.speed = origSpeed; // restore for advance()
 }
 
 function updateGhost(g,i,dt){

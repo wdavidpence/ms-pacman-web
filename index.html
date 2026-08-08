@@ -230,8 +230,8 @@ function targetFor(i){
 
 // Fruit path (Ms. Pac-Man: fruit follows HARDCODED path, not random wander)
 // Fruit spawns at a tunnel entrance and bounces clockwise around the maze
-const FRUIT_PATH = [
-  // Path 1: from tunnel (0,14) clockwise around ghost house area
+// Path 1: enters from left tunnel, loops clockwise around ghost house, exits right
+const FRUIT_PATH_1 = [
   {x:0,y:14},{x:1,y:14},{x:2,y:14},{x:3,y:14},{x:4,y:14},{x:5,y:14},
   {x:6,y:14},{x:7,y:14},{x:8,y:14},{x:9,y:14},{x:10,y:14},
   {x:10,y:15},{x:10,y:16},{x:10,y:17},{x:10,y:18},{x:10,y:19},
@@ -242,17 +242,39 @@ const FRUIT_PATH = [
   {x:25,y:14},{x:26,y:14},{x:27,y:14},
 ];
 
+// Path 2: enters from right tunnel, loops counter-clockwise around ghost house, exits left
+const FRUIT_PATH_2 = [
+  {x:27,y:14},{x:26,y:14},{x:25,y:14},{x:24,y:14},{x:23,y:14},{x:22,y:14},
+  {x:21,y:14},{x:20,y:14},{x:19,y:14},
+  {x:19,y:15},{x:19,y:16},{x:19,y:17},{x:19,y:18},{x:19,y:19},
+  {x:18,y:19},{x:17,y:19},{x:16,y:19},{x:15,y:19},{x:14,y:19},
+  {x:13,y:19},{x:12,y:19},{x:11,y:19},
+  {x:10,y:19},{x:10,y:18},{x:10,y:17},{x:10,y:16},{x:10,y:15},
+  {x:10,y:14},{x:9,y:14},{x:8,y:14},{x:7,y:14},{x:6,y:14},
+  {x:5,y:14},{x:4,y:14},{x:3,y:14},{x:2,y:14},{x:1,y:14},
+  {x:0,y:14},
+];
+
 function spawnFruit(){
   const f = FRUIT_TABLE[Math.min(FRUIT_TABLE.length-1, level-1)];
+  // Choose random direction (left or right tunnel entry)
+  const path = Math.random() < 0.5 ? FRUIT_PATH_1 : FRUIT_PATH_2;
   fruit = {
     ...f,
-    col: 13, row: 17,
-    fromCol:13, fromRow:17, toCol:13, toRow:17,
-    dir: 0, progress:0, moving:false, speed:4.5,
+    path: path,
     pathIndex: 0, // current position in hardcoded path
     life: 10 + Math.random()*2,
     active:true
   };
+  // Start at the first position of chosen path
+  fruit.col = path[0].x;
+  fruit.row = path[0].y;
+  fruit.fromCol = path[0].x;
+  fruit.fromRow = path[0].y;
+  fruit.toCol = path[0].x;
+  fruit.toRow = path[0].y;
+  fruit.progress = 0;
+  fruit.moving = false;
 }
 
 function updateFruit(dt){
@@ -273,7 +295,7 @@ function updateFruit(dt){
   }
 
   // Follow hardcoded path (arcade-faithful)
-  if(fruit.pathIndex >= FRUIT_PATH.length){
+  if(fruit.pathIndex >= fruit.path.length){
     // Path complete: blink before disappearing (arcade-faithful)
     fruit.blink = true;
     fruit.blinkTimer = 0.3;
@@ -289,15 +311,15 @@ function updateFruit(dt){
     }
   }
 
-  const target = FRUIT_PATH[fruit.pathIndex];
+  const target = fruit.path[fruit.pathIndex];
   fruit.toCol = target.x;
   fruit.toRow = target.y;
 
   if(fruit.col === target.x && fruit.row === target.y){
     // Arrived at next waypoint, move to next
     fruit.pathIndex++;
-    if(fruit.pathIndex < FRUIT_PATH.length){
-      const next = FRUIT_PATH[fruit.pathIndex];
+    if(fruit.pathIndex < fruit.path.length){
+      const next = fruit.path[fruit.pathIndex];
       fruit.fromCol = fruit.col;
       fruit.fromRow = fruit.row;
       fruit.toCol = next.x;

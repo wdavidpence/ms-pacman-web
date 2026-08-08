@@ -66,21 +66,17 @@ const TUNNEL_ROW = 14;
 const PAC_SPEED = 11.0; // arcade tempo (tiles/sec)
 const GHOST_BASE = [10.0, 9.8, 9.6, 9.4];
 
-// Classic scatter/chase timing (seconds)
+// Ms. Pac-Man ghosts NEVER scatter during gameplay - they always chase (more aggressive)
 const SCHEDULE = [
-  {mode:'scatter', duration:7}, {mode:'chase', duration:20},
-  {mode:'scatter', duration:7}, {mode:'chase', duration:20},
-  {mode:'scatter', duration:5}, {mode:'chase', duration:20},
-  {mode:'scatter', duration:5}, {mode:'chase', duration:Infinity}
+  {mode:'chase', duration:Infinity}
 ];
-const SCATTER = [{x:24,y:0},{x:2,y:0},{x:27,y:30},{x:0,y:30}];
 const HOUSE_DELAY = [0, 2.5, 5.0, 7.5]; // seconds (arcade-faithful)
 
 // Ms. Pac-Man fruit by level (values classic-ish)
 const FRUIT_TABLE = [
   {name:'CHERRY', color:'#ff0000', pts:100},
   {name:'STRAWBERRY', color:'#ff3040', pts:200},
-  {name:'PEACH', color:'#ffb852', pts:500},
+  {name:'ORANGE', color:'#ffb852', pts:500},
   {name:'PRETZEL', color:'#d4a574', pts:700},
   {name:'APPLE', color:'#00ff00', pts:1000},
   {name:'PEAR', color:'#00ff80', pts:2000},
@@ -135,7 +131,7 @@ function createMaze(){
 // --- actors ---
 function opposite(d){ return (d+2)%4; }
 function makeActor(col,row,dir,speed,color,name){
-  return {col,row,fromCol:col,fromRow:row,toCol:col,toRow:row,dir,nextDir:dir,progress:0,moving:false,speed,color,name,anim:0,mode:'scatter',eaten:false,inHouse:false,houseT:0};
+  return {col,row,fromCol:col,fromRow:row,toCol:col,toRow:row,dir,nextDir:dir,progress:0,moving:false,speed,color,name,anim:0,eaten:false,inHouse:false,houseT:0};
 }
 function posOf(a){
   const x=a.moving?a.fromCol+(a.toCol-a.fromCol)*a.progress:a.col;
@@ -207,7 +203,7 @@ function resetActors(){
   fruit=null;
 }
 
-// Ghost AI targets
+// Ghost AI targets - Ms. Pac-Man ghosts ALWAYS chase, never scatter
 function targetFor(i){
   const g=ghosts[i];
   if(g.eaten) return {x:14,y:14}; // home
@@ -215,8 +211,7 @@ function targetFor(i){
     // frightened: random-ish via far pseudo target
     return {x:(Math.random()*COLS)|0, y:(Math.random()*ROWS)|0};
   }
-  const phase = SCHEDULE[scheduleIndex];
-  if(phase.mode==='scatter') return SCATTER[i];
+  // Always chase in Ms. Pac-Man (no scatter phases)
   // chase personalities
   if(i===0) return {x:pacman.col, y:pacman.row}; // Blinky
   if(i===1){ // Pinky 4 ahead
@@ -229,10 +224,8 @@ function targetFor(i){
     const bx=ghosts[0].col, by=ghosts[0].row;
     return {x:px+(px-bx), y:py+(py-by)};
   }
-  // Clyde: chase if far, else scatter
-  const dist=Math.abs(g.col-pacman.col)+Math.abs(g.row-pacman.row);
-  if(dist>8) return {x:pacman.col,y:pacman.row};
-  return SCATTER[3];
+  // Clyde: always chase Ms. Pac-Man (Ms. Pac-Man removed Clyde's scatter behavior)
+  return {x:pacman.col, y:pacman.row};
 }
 
 // Fruit path (Ms. Pac-Man: fruit follows HARDCODED path, not random wander)
@@ -410,7 +403,6 @@ function updateGhost(g,i,dt){
   g.speed = GHOST_BASE[i] * (1 + (level-1)*0.04);
   if(powerTimer>0 && !g.eaten) g.speed *= 0.55;
   if(g.eaten) g.speed = 10;
-  if(g.row===TUNNEL_ROW) g.speed *= 0.55;
 
   if(g.inHouse){
     g.houseT -= dt;

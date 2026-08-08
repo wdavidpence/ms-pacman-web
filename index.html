@@ -645,10 +645,13 @@ function getWallColorForLevel(lv){
   if(lv<=2) return '#cc4488';
   // Levels 3-5: Light blue walls (secondary: pink)
   if(lv<=5) return '#4488cc';
-  // Levels 6-9: Brown/orange walls (secondary: lilac)
+  // Levels 6-9: Orange/brown walls (secondary: lilac)
   if(lv<=9) return '#cc8844';
-  // Levels 10+: Dark blue walls (secondary: pink)
-  return '#2244aa';
+  // Levels 10-13: Dark blue walls (secondary: pink)
+  if(lv<=13) return '#2244aa';
+  // Levels 14+: alternate Brown (6-9) and Dark Blue (10-13) every 4 levels
+  const cycle = Math.floor((lv - 14) / 4);
+  return (cycle % 2 === 0) ? '#cc8844' : '#2244aa';
 }
 
 // Helper to darken a hex color for ghost house interior

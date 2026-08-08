@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v2.0 • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v3.0 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -736,6 +736,12 @@ function drawDots(){
       ctx.shadowBlur=0;
       ctx.fillStyle='rgba(255,255,255,0.7)';
       ctx.beginPath(); ctx.arc(px-1.5,py-2,pulse*0.35,0,Math.PI*2); ctx.fill();
+      // Arcade-faithful: 'P' letter on power pellet (Ms. Pac-Man signature)
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.font=`bold ${Math.floor(pulse*1.2)}px Courier New`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('P', px, py+0.5);
       // Outer glow ring
       ctx.strokeStyle='rgba(255,184,151,.2)';
       ctx.lineWidth=2;

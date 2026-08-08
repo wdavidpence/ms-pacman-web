@@ -77,7 +77,7 @@ const HOUSE_DELAY = [0, 2.5, 5.0, 7.5]; // seconds (arcade-faithful)
 const FRUIT_TABLE = [
   {name:'CHERRY', color:'#ff0000', pts:100},
   {name:'STRAWBERRY', color:'#ff3040', pts:200},
-  {name:'ORANGE', color:'#ffb852', pts:500},
+  {name:'PEACH', color:'#ffb852', pts:500},
   {name:'PRETZEL', color:'#d4a574', pts:700},
   {name:'APPLE', color:'#00ff00', pts:1000},
   {name:'PEAR', color:'#00ff80', pts:2000},
@@ -361,8 +361,10 @@ function handlePellet(){
   const c=maze[pacman.row][pacman.col];
   if(c===2){
     maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; sfx('waka'); scoreFlash=0.15; checkExtra();
-    // Fruit triggers at ~70 and ~170 pellets classic-ish
-    if(pelletsEaten===70 || pelletsEaten===170) spawnFruit();
+    // Fruit triggers at ~64 dots and when 66 remain (arcade-faithful)
+    const totalDots = maze.flat().filter(c => c === 2 || c === 3).length;
+    if(pelletsEaten===64) spawnFruit();
+    if(totalDots - pelletsEaten === 66 && !fruit) spawnFruit();
     // Particle burst on pellet eat (tiny golden sparkles)
     const pp=posOf(pacman);
     for(let i=0;i<4;i++){

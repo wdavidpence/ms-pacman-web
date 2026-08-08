@@ -766,44 +766,60 @@ function drawDots(){
       ctx.beginPath(); ctx.arc(px-0.8,py-0.8,0.8,0,Math.PI*2); ctx.fill();
       ctx.restore();
     } else if(c===3){
-      // Power pellet: AAA expanding rings + dramatic pulse + aura
+      // Power pellet: AAA expanding rings + dramatic pulse + arcade flash
       const px=x*TILE+8, py=y*TILE+8;
       const pulse = 6+Math.sin(t*4)*3;
+      // Arcade-faithful: power pellet flashes/blinks rapidly
+      const flash = Math.floor(t * 6) % 2 === 0;
+
       // Expanding shockwave rings (3 rings, offset phases)
       ctx.save();
       for(let r=0;r<3;r++){
         const phase = ((t*1.5+r/3)%1);
         const ringR = pulse + phase*24;
-        const alpha = (1-phase)*0.25;
+        const alpha = (1-phase)*0.25 * (flash ? 1.0 : 0.3);
         ctx.strokeStyle=`rgba(255,184,151,${alpha})`;
         ctx.lineWidth=2;
         ctx.beginPath(); ctx.arc(px,py,ringR,0,Math.PI*2); ctx.stroke();
       }
       ctx.restore();
+
       // Main glowing orb with level-based color (arcade: power pellet color shifts by level)
       ctx.save();
       const powerColor = getPowerPelletColorForLevel(level);
-      ctx.shadowColor=powerColor; ctx.shadowBlur=20;
+
+      // Flash effect: dim during off-cycles
+      if(!flash){
+        ctx.globalAlpha = 0.35;
+      }
+
+      ctx.shadowColor=powerColor; ctx.shadowBlur = flash ? 20 : 8;
       const orbGrad = ctx.createRadialGradient(px-2,py-2,1,px,py,pulse);
-      orbGrad.addColorStop(0,'#ffffff');
-      orbGrad.addColorStop(0.4,powerColor);
+      orbGrad.addColorStop(0, flash ? '#ffffff' : 'rgba(255,255,255,0.3)');
+      orbGrad.addColorStop(0.4, powerColor);
       orbGrad.addColorStop(1, darkenHex(powerColor, 0.6));
       ctx.fillStyle=orbGrad;
       ctx.beginPath(); ctx.arc(px,py,pulse,0,Math.PI*2); ctx.fill();
+
       // Inner white highlight
       ctx.shadowBlur=0;
-      ctx.fillStyle='rgba(255,255,255,0.7)';
-      ctx.beginPath(); ctx.arc(px-1.5,py-2,pulse*0.35,0,Math.PI*2); ctx.fill();
+      if(flash){
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.beginPath(); ctx.arc(px-1.5,py-2,pulse*0.35,0,Math.PI*2); ctx.fill();
+      }
+
       // Arcade-faithful: 'P' letter on power pellet (Ms. Pac-Man signature)
-      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillStyle=flash ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.15)';
       ctx.font=`bold ${Math.floor(pulse*1.2)}px Courier New`;
       ctx.textAlign='center';
       ctx.textBaseline='middle';
       ctx.fillText('P', px, py+0.5);
+
       // Outer glow ring
-      ctx.strokeStyle='rgba(255,184,151,.2)';
+      ctx.strokeStyle = flash ? 'rgba(255,184,151,.4)' : 'rgba(255,184,151,.05)';
       ctx.lineWidth=2;
       ctx.beginPath(); ctx.arc(px,py,pulse+6,0,Math.PI*2); ctx.stroke();
+
       ctx.restore();
     }
   }

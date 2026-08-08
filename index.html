@@ -48,6 +48,21 @@ const COLORS = {
 };
 const GAME_VERSION = '3.0';
 
+// High score table (arcade-faithful: 5 scrolling scores)
+let highScores = [];
+try {
+  const saved = JSON.parse(localStorage.getItem('mspacHighScores') || '[]');
+  highScores = saved.slice(0, 5);
+} catch(e) { highScores = []; }
+
+function updateHighScore(score) {
+  if (score <= highScores[0] && highScores.length > 0) return;
+  highScores.push(score);
+  highScores.sort((a, b) => b - a);
+  highScores = highScores.slice(0, 5);
+  localStorage.setItem('mspacHighScores', JSON.stringify(highScores));
+}
+
 // --- state ---
 let score=0, high=+localStorage.getItem('mspacHigh')||0, lives=3, level=1, extraLife=false;
 let gameState='title'; // title|playing|death|intermission|gameover
@@ -77,7 +92,7 @@ const HOUSE_DELAY = [0, 2.5, 5.0, 7.5]; // seconds (arcade-faithful)
 const FRUIT_TABLE = [
   {name:'CHERRY', color:'#ff0000', pts:100},
   {name:'STRAWBERRY', color:'#ff3040', pts:200},
-  {name:'PEACH', color:'#ffb852', pts:500},
+  {name:'ORANGE', color:'#ffb852', pts:500},
   {name:'PRETZEL', color:'#d4a574', pts:700},
   {name:'APPLE', color:'#00ff00', pts:1000},
   {name:'PEAR', color:'#00ff80', pts:2000},
@@ -453,10 +468,11 @@ function updateGhost(g,i,dt){
       g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11;
       g.moving=false; g.dir=1;
     }
-    // Arcade-faithful: ghosts visibly bounce in ghost house
+    // Arcade-faithful: ghosts visibly bounce in ghost house (staggered exit timing)
     g.anim = (g.anim||0) + dt;
-    // Vertical bounce: oscillate up/down by 2 pixels
-    g.row = 11 + Math.sin(g.anim * 6) * 0.5;
+    // Vertical bounce: oscillate up/down by 2 pixels (each ghost has different phase)
+    const ghostPhase = i * 1.5; // stagger each ghost's bounce phase
+    g.row = 11 + Math.sin(g.anim * 6 + ghostPhase) * 0.5;
     return;
   }
   // return home when eaten
@@ -640,13 +656,32 @@ function drawWalls(){
     ctx.fillRect(x*TILE, y*TILE, (endX-x+1)*TILE, TILE);
   }
 
-  // Bevel: top-left highlight (2px edge)
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  // Bevel: top-left highlight with secondary accent color (arcade-faithful)
+  const secondaryColor = getSecondaryColorForLevel(level);
+  ctx.fillStyle = `rgba(255,255,255,0.12)`;
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
     if(maze[y][x]!==1) continue;
     if(y>0 && maze[y-1][x]!==1) ctx.fillRect(x*TILE, y*TILE, TILE, 2);
     if(x>0 && maze[y][x-1]!==1) ctx.fillRect(x*TILE, y*TILE, 2, TILE);
   }
+
+  // Secondary color accents: subtle glow on wall edges matching arcade accent colors
+  ctx.save();
+  ctx.shadowColor = secondaryColor;
+  ctx.shadowBlur = 4;
+  ctx.strokeStyle = `rgba(255,255,255,0.06)`;
+  ctx.lineWidth = 1;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    // Draw edge lines where walls meet empty space
+    if(y>0 && maze[y-1][x]!==1){
+      ctx.beginPath();
+      ctx.moveTo(x*TILE, y*TILE);
+      ctx.lineTo((x+1)*TILE, y*TILE);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 
   // Bevel: bottom-right shadow (2px edge)
   ctx.fillStyle = 'rgba(0,0,0,0.18)';
@@ -696,6 +731,38 @@ function getWallColorForLevel(lv){
   // Levels 14+: alternate Brown (6-9) and Dark Blue (10-13) every 4 levels
   const cycle = Math.floor((lv - 14) / 4);
   return (cycle % 2 === 0) ? '#cc8844' : '#2244aa';
+}
+
+// Secondary accent color for each maze (arcade-faithful)
+function getSecondaryColorForLevel(lv){
+  // Levels 1-2: Lilac accent on pink maze
+  if(lv<=2) return '#dda0dd';
+  // Levels 3-5: Pink accent on light blue maze
+  if(lv<=5) return '#ff69b4';
+  // Levels 6-9: Lilac accent on orange maze
+  if(lv<=9) return '#dda0dd';
+  // Levels 10-13: Pink accent on dark blue maze
+  if(lv<=13) return '#ff69b4';
+  // Levels 14+: alternate
+  const cycle = Math.floor((lv - 14) / 4);
+  return (cycle % 2 === 0) ? '#dda0dd' : '#ff69b4';
+}
+
+// Cabinet marquee glow (arcade-faithful: marquee light bleeds onto screen)
+function drawCabinetMarquee(t){
+  const pulse = 0.15 + Math.sin(t * 2) * 0.05;
+  // Top edge glow simulating marquee light
+  const grad = ctx.createLinearGradient(0, 0, 0, 60);
+  grad.addColorStop(0, `rgba(255,184,255,${pulse})`);
+  grad.addColorStop(1, 'rgba(255,184,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, 60);
+  // Subtle bottom edge glow (screen bleed)
+  const grad2 = ctx.createLinearGradient(0, canvas.height - 30, 0, canvas.height);
+  grad2.addColorStop(0, 'rgba(255,184,255,0)');
+  grad2.addColorStop(1, `rgba(255,184,255,${pulse * 0.5})`);
+  ctx.fillStyle = grad2;
+  ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
 }
 
 // Helper to darken a hex color for ghost house interior
@@ -801,6 +868,8 @@ function drawDots(){
       // Power pellet: AAA expanding rings + dramatic pulse + arcade flash
       const px=x*TILE+8, py=y*TILE+8;
       const pulse = 6+Math.sin(t*4)*3;
+      // Arcade-faithful: power pellet size oscillates (small→large→small rhythm)
+      const sizePulse = 4+Math.sin(t*3)*2;
       // Arcade-faithful: power pellet flashes/blinks rapidly
       const flash = Math.floor(t * 6) % 2 === 0;
 
@@ -808,7 +877,7 @@ function drawDots(){
       ctx.save();
       for(let r=0;r<3;r++){
         const phase = ((t*1.5+r/3)%1);
-        const ringR = pulse + phase*24;
+        const ringR = sizePulse + phase*20;
         const alpha = (1-phase)*0.25 * (flash ? 1.0 : 0.3);
         ctx.strokeStyle=`rgba(255,184,151,${alpha})`;
         ctx.lineWidth=2;
@@ -826,23 +895,23 @@ function drawDots(){
       }
 
       ctx.shadowColor=powerColor; ctx.shadowBlur = flash ? 20 : 8;
-      const orbGrad = ctx.createRadialGradient(px-2,py-2,1,px,py,pulse);
+      const orbGrad = ctx.createRadialGradient(px-2,py-2,1,px,py,sizePulse);
       orbGrad.addColorStop(0, flash ? '#ffffff' : 'rgba(255,255,255,0.3)');
       orbGrad.addColorStop(0.4, powerColor);
       orbGrad.addColorStop(1, darkenHex(powerColor, 0.6));
       ctx.fillStyle=orbGrad;
-      ctx.beginPath(); ctx.arc(px,py,pulse,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px,py,sizePulse,0,Math.PI*2); ctx.fill();
 
       // Inner white highlight
       ctx.shadowBlur=0;
       if(flash){
         ctx.fillStyle='rgba(255,255,255,0.7)';
-        ctx.beginPath(); ctx.arc(px-1.5,py-2,pulse*0.35,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(px-1.5,py-2,sizePulse*0.35,0,Math.PI*2); ctx.fill();
       }
 
       // Arcade-faithful: 'P' letter on power pellet (Ms. Pac-Man signature)
       ctx.fillStyle=flash ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.15)';
-      ctx.font=`bold ${Math.floor(pulse*1.2)}px Courier New`;
+      ctx.font=`bold ${Math.floor(sizePulse*1.2)}px Courier New`;
       ctx.textAlign='center';
       ctx.textBaseline='middle';
       ctx.fillText('P', px, py+0.5);
@@ -850,7 +919,7 @@ function drawDots(){
       // Outer glow ring
       ctx.strokeStyle = flash ? 'rgba(255,184,151,.4)' : 'rgba(255,184,151,.05)';
       ctx.lineWidth=2;
-      ctx.beginPath(); ctx.arc(px,py,pulse+6,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px,py,sizePulse+6,0,Math.PI*2); ctx.stroke();
 
       ctx.restore();
     }
@@ -1314,8 +1383,16 @@ function panelTitleScreen(){
   ctx.fillText('Eat all dots to advance', canvas.width/2, 300);
   ctx.fillText('Power pellets let you eat ghosts!', canvas.width/2, 320);
 
-  // High score display with glow
-  if(high > 0){
+  // High score display with glow (show top 5 scores)
+  if(highScores.length > 0){
+    ctx.fillStyle='#ff0'; ctx.font='bold 10px Courier New';
+    ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
+    for(let i=0;i<Math.min(3,highScores.length);i++){
+      const label = i===0?'1.' : (i===1?'2.' : '3.');
+      ctx.fillText(`${label} ${String(highScores[i]).padStart(6,'0')}`, canvas.width/2, 355+i*14);
+    }
+    ctx.shadowBlur=0;
+  } else if(high > 0){
     ctx.fillStyle='#ff0'; ctx.font='bold 12px Courier New';
     ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
     ctx.fillText(`HIGH SCORE: ${String(high).padStart(6,'0')}`, canvas.width/2, 355);
@@ -1335,6 +1412,10 @@ function draw(){
   ctx.save();
   // screen shake offset
   ctx.translate(shakeX, shakeY);
+
+  // Cabinet marquee glow (simulates arcade cabinet light bleeding onto screen)
+  const t = performance.now()/1000;
+  drawCabinetMarquee(t);
 
   ctx.fillStyle='#000'; ctx.fillRect(-10,-10,canvas.width+20,canvas.height+20);
   drawWalls();
@@ -1554,6 +1635,7 @@ function draw(){
 
   if(gameState==='gameover'){
     const isNewHigh = score >= high && score > 0;
+    updateHighScore(score); // Save to high score table
     panel('GAME OVER', [
       `SCORE ${String(score).padStart(6,'0')}`,
       `HIGH  ${String(high).padStart(6,'0')}${isNewHigh ? ' ★ NEW!' : ''}`,

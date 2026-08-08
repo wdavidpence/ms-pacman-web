@@ -274,9 +274,19 @@ function updateFruit(dt){
 
   // Follow hardcoded path (arcade-faithful)
   if(fruit.pathIndex >= FRUIT_PATH.length){
-    // Path complete: disappear (tunnel exit)
-    fruit = null;
+    // Path complete: blink before disappearing (arcade-faithful)
+    fruit.blink = true;
+    fruit.blinkTimer = 0.3;
     return;
+  }
+
+  // Blink timer for disappearing fruit
+  if(fruit.blink){
+    fruit.blinkTimer -= dt;
+    if(fruit.blinkTimer <= 0){
+      fruit = null;
+      return;
+    }
   }
 
   const target = FRUIT_PATH[fruit.pathIndex];
@@ -411,8 +421,10 @@ function updateGhost(g,i,dt){
       g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11;
       g.moving=false; g.dir=1;
     }
-    // bounce animation while in house
+    // Arcade-faithful: ghosts visibly bounce in ghost house
     g.anim = (g.anim||0) + dt;
+    // Vertical bounce: oscillate up/down by 2 pixels
+    g.row = 11 + Math.sin(g.anim * 6) * 0.5;
     return;
   }
   // return home when eaten
@@ -1073,32 +1085,49 @@ function drawFruit(){
   const t=performance.now()/1000;
   // Subtle bob animation
   const bob=Math.sin(t*3)*2;
+
+  // Arcade-faithful: blink rapidly when about to disappear
+  let alpha = 1.0;
+  if(fruit.blink){
+    // Rapid blink (4x per second)
+    alpha = Math.sin(t * 16) > 0 ? 1.0 : 0.2;
+  }
+
   ctx.save();
+  ctx.globalAlpha = alpha;
+
   // Shadow beneath fruit
   ctx.fillStyle='rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(p.x,p.y+8,5,2,0,0,Math.PI*2); ctx.fill();
+
   // Glow
   ctx.shadowColor=fruit.color; ctx.shadowBlur=8;
+
   // Stem + leaf (drawn first, behind fruit)
   ctx.fillStyle='#0a0';
   ctx.fillRect(p.x-1,p.y-9+bob,2,4);
   ctx.fillStyle='#0d0';
   ctx.beginPath(); ctx.ellipse(p.x+3,p.y-8+bob,3,2,0.3,0,Math.PI*2); ctx.fill();
+
   // Fruit body with gradient-like highlight
   ctx.fillStyle=fruit.color;
   ctx.beginPath(); ctx.arc(p.x,p.y+bob,7,0,Math.PI*2); ctx.fill();
+
   ctx.shadowBlur=0;
   // Highlight (top-left shine)
   ctx.fillStyle='rgba(255,255,255,0.4)';
   ctx.beginPath(); ctx.arc(p.x-2.5,p.y-2.5+bob,2.5,0,Math.PI*2); ctx.fill();
+
   // Outline
   ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.arc(p.x,p.y+bob,7,0,Math.PI*2); ctx.stroke();
+
   // Fruit name label below
   ctx.fillStyle='#fff';
   ctx.font='bold 9px Courier New';
   ctx.textAlign='center';
   ctx.fillText(fruit.name, p.x, p.y+18+bob);
+
   ctx.restore();
 }
 function drawIntermission(){

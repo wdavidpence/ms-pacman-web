@@ -55,12 +55,16 @@ try {
   highScores = saved.slice(0, 5);
 } catch(e) { highScores = []; }
 
+function safeStorage() {
+  try { localStorage.setItem('mspacHighScores', JSON.stringify(highScores)); return true; }
+  catch(e) { return false; }
+}
 function updateHighScore(score) {
   if (score <= highScores[0] && highScores.length > 0) return;
   highScores.push(score);
   highScores.sort((a, b) => b - a);
   highScores = highScores.slice(0, 5);
-  localStorage.setItem('mspacHighScores', JSON.stringify(highScores));
+  safeStorage();
 }
 
 // --- state ---
@@ -303,7 +307,7 @@ function updateFruit(dt){
   const fp=posOf(fruit), pp=posOf(pacman);
   if((fp.x-pp.x)**2+(fp.y-pp.y)**2 < 100){
     score += fruit.pts;
-    sfx('fruit');
+    safeSfx('fruit');
     // spawn floating score popup at fruit position with name (gold)
     scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.name} ${fruit.pts}`, t:1.0, color:'#ffcc00'});
     fruit=null;
@@ -367,16 +371,26 @@ function checkExtra(){
   // Extra life every 10k points (arcade standard)
   const threshold = Math.floor(score/10000)*10000;
   if(!extraLife && score>=threshold+10000){
-    lives++; extraLife=true; sfx('extra');
+    lives++; extraLife=true; safeSfx('extra');
     tunnelFlash=0.6; // bright screen flash on extra life
   }
-  if(score>high){ high=score; localStorage.setItem('mspacHigh', String(high)); }
+  if(score>high){ high=score; safeSetHigh(); }
 }
+
+function safeSetHigh(){
+  try { localStorage.setItem('mspacHigh', String(high)); } catch(e) {}
+}
+
+// Safe audio wrappers — prevent crashes if audio.js fails to load
+function safeSfx(name){ try { sfx(name); } catch(e) {} }
+function safeStartSiren(){ try { startSiren(); } catch(e) {} }
+function safeStopSiren(){ try { stopSiren(); } catch(e) {} }
+function safeUpdateSiren(s,p,e,t){ try { updateSiren(s,p,e,t); } catch(e) {} }
 
 function handlePellet(){
   const c=maze[pacman.row][pacman.col];
   if(c===2){
-    maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; sfx('waka'); scoreFlash=0.15; checkExtra();
+    maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; safeSfx('waka'); scoreFlash=0.15; checkExtra();
     // Fruit triggers at ~64 dots and when 66 remain (arcade-faithful)
     if(pelletsEaten===64) spawnFruit();
     // remainingPellets = totalPellets - pelletsEaten (cached, no maze scan)
@@ -393,7 +407,7 @@ function handlePellet(){
     powerTimer = Math.max(4, 9 - (level-1)*0.7);
     ghostCombo=0;
     ghosts.forEach(g=>{ if(!g.eaten && !g.inHouse) g.dir=opposite(g.dir); });
-    sfx('power'); checkExtra();
+    safeSfx('power'); checkExtra();
     // dramatic screen shake on power pellet
     shakeT = 0.3;
   }
@@ -402,8 +416,8 @@ function handlePellet(){
     // Level clear bonus points (arcade standard: 10000 per life remaining)
     const bonus = lives * 10000;
     score += bonus;
-    stopSiren();
-    sfx('level');
+    safeStopSiren();
+    safeSfx('level');
     tunnelFlash=0.5; // brief screen flash on level clear
     // Show bonus popup
     scorePopups.push({x:canvas.width/2, y:canvas.height/2-40, text:`+${bonus}`, t:2.0, color:'#ff0'});
@@ -438,12 +452,37 @@ function nextLevel(){
   resetActors();
   gameState='playing';
   statusEl.textContent = `LEVEL ${level}`;
-  startSiren();
+  safeStartSiren();
 }
 
 function updatePac(dt){
   // Ms. Pac-Man speed increases during power pellet (arcade-faithful)
   const effectiveSpeed = powerTimer > 0 ? PAC_SPEED_POWER : PAC_SPEED;
+
+  // Track Pac-Man movement for stuck detection
+  if(pacman.moving){
+    pacman.lastMoveProgress = pacman.progress;
+    pacman.stuckTimer = 0;
+  } else {
+    pacman.stuckTimer = (pacman.stuckTimer||0) + dt;
+    // If stuck for >3 seconds, force a direction change using nextDir or current dir
+    if(pacman.stuckTimer > 3){
+      if(resolveMove(pacman,pacman.nextDir,false)){
+        startStep(pacman,pacman.nextDir,false);
+      } else if(resolveMove(pacman,pacman.dir,false)){
+        startStep(pacman,pacman.dir,false);
+      } else {
+        // Try all 4 directions as last resort
+        for(let d=0;d<4;d++){
+          if(resolveMove(pacman,d,false)){
+            startStep(pacman,d,false);
+            break;
+          }
+        }
+      }
+      pacman.stuckTimer = 0;
+    }
+  }
 
   const landed=advance(pacman,dt);
   if(landed){ pacman.anim++; handlePellet(); }
@@ -479,6 +518,26 @@ function updateGhost(g,i,dt){
   // return home when eaten
   if(g.eaten && g.col===14 && g.row===14){
     g.eaten=false; g.inHouse=true; g.houseT=1.2;
+  }
+
+  // Track ghost movement for stuck detection
+  if(g.moving){
+    g.lastMoveProgress = g.progress;
+    g.stuckTimer = 0;
+  } else {
+    g.stuckTimer = (g.stuckTimer||0) + dt;
+    // If stuck for >2 seconds, force a direction change
+    if(g.stuckTimer > 2){
+      const newDir = (g.dir + (Math.random() < 0.5 ? 1 : 3)) % 4;
+      if(resolveMove(g, newDir, true)){
+        startStep(g, newDir, true);
+        g.stuckTimer = 0;
+      } else {
+        // Try opposite direction as last resort
+        const opp = opposite(g.dir);
+        if(resolveMove(g, opp, true)) startStep(g, opp, true);
+      }
+    }
   }
 
   const landed=advance(g,dt);
@@ -528,12 +587,12 @@ function collide(){
         const speed=30+Math.random()*60;
         particles.push({x:gp.x,y:gp.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:0.6,maxLife:0.6,color:g.eaten?'#fff':g.color,size:2+Math.random()*2});
       }
-      g.eaten=true; sfx('ghost'); checkExtra();
+      g.eaten=true; safeSfx('ghost'); checkExtra();
       return;
     }
     if(g.eaten) continue;
     // death
-    lives--; sfx('die'); stopSiren();
+    lives--; safeSfx('die'); safeStopSiren();
     gameState='death'; deathT=2.0;
     shakeT = 0.5; // heavy shake on death
     return;
@@ -556,7 +615,7 @@ function update(dt){
         gameState='gameover';
         titlePrompt='start';
         statusEl.textContent='GAME OVER';
-        if(score>high){ high=score; localStorage.setItem('mspacHigh',String(high)); }
+        if(score>high){ high=score; safeSetHigh(); }
       } else {
         resetActors();
         gameState='ready';
@@ -570,7 +629,7 @@ function update(dt){
     if(readyTimer<=0){
       gameState='playing';
       statusEl.textContent='Playing';
-      startSiren();
+      safeStartSiren();
     }
     return;
   }
@@ -601,26 +660,30 @@ function update(dt){
   updatePac(dt);
   ghosts.forEach((g,i)=>updateGhost(g,i,dt));
   updateFruit(dt);
-  if(powerTimer>0) powerTimer=Math.max(0,powerTimer-dt);
+  if(powerTimer>0) powerTimer=Math.max(0,Math.min(10,powerTimer-dt)); // cap at 10s max
   if(powerTimer===0) ghostCombo=0;
   // update score popups
   for(let i=scorePopups.length-1;i>=0;i--){
     const p=scorePopups[i];
+    if(!isFinite(p.t)) { scorePopups.splice(i,1); continue; }
     p.t -= dt;
+    if(!isFinite(p.y)) { scorePopups.splice(i,1); continue; }
     p.y -= 20*dt; // float up
     if(p.t<=0) scorePopups.splice(i,1);
   }
   // update particles (logic only — drawing stays in draw() to avoid canvas slowdown)
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
+    if(!isFinite(p.life)) { particles.splice(i,1); continue; }
     p.life -= dt;
+    if(!isFinite(p.x) || !isFinite(p.y)) { particles.splice(i,1); continue; }
     p.x += p.vx*dt;
     p.y += p.vy*dt;
     p.vy += 80*dt; // gravity
     if(p.life<=0){ particles.splice(i,1); }
   }
   collide();
-  updateSiren(gameState, powerTimer, pelletsEaten, totalPellets);
+  safeUpdateSiren(gameState, powerTimer, pelletsEaten, totalPellets);
 }
 
 // --- draw ---
@@ -675,10 +738,10 @@ function drawWalls(){
     if(x<COLS-1 && maze[y][x+1]!==1) ctx.fillRect(x*TILE+TILE-2, y*TILE, 2, TILE);
   }
 
-  // Maze border: outer edge glow for cabinet presence
+  // Maze border: outer edge glow for cabinet presence - reduced blur for performance
   ctx.save();
   ctx.shadowColor = wallColor;
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 6; // reduced from 12 for performance
   ctx.strokeStyle = wallColor;
   ctx.lineWidth = 3;
   ctx.strokeRect(0.5, 0.5, COLS*TILE-1, ROWS*TILE-1);
@@ -835,11 +898,11 @@ function drawDots(){
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
     const c=maze[y][x];
     if(c===2){
-      // Pellet: warm dot with soft glow and subtle twinkle
+      // Pellet: warm dot with subtle glow and twinkle - reduced shadowBlur for performance
       const px=x*TILE+8, py=y*TILE+8;
       const twinkle = 0.7 + Math.sin(t*3+x+y)*0.15;
       ctx.save();
-      ctx.shadowColor=COLORS.pellet; ctx.shadowBlur=3;
+      ctx.shadowColor=COLORS.pellet; ctx.shadowBlur=1.5; // reduced from 3 for performance
       ctx.globalAlpha = twinkle;
       ctx.fillStyle=COLORS.pellet;
       ctx.beginPath(); ctx.arc(px,py,2.5,0,Math.PI*2); ctx.fill();
@@ -878,7 +941,7 @@ function drawDots(){
         ctx.globalAlpha = 0.35;
       }
 
-      ctx.shadowColor=powerColor; ctx.shadowBlur = flash ? 20 : 8;
+      ctx.shadowColor=powerColor; ctx.shadowBlur = flash ? 12 : 5; // reduced from 20/8 for performance
       const orbGrad = ctx.createRadialGradient(px-2,py-2,1,px,py,sizePulse);
       orbGrad.addColorStop(0, flash ? '#ffffff' : 'rgba(255,255,255,0.3)');
       orbGrad.addColorStop(0.4, powerColor);
@@ -920,10 +983,10 @@ function drawMsPac(){
   ctx.rotate(rot);
   const mouth=0.15+Math.abs(Math.sin(pacman.anim*0.6))*0.4;
 
-  // Outer golden glow halo
+  // Outer golden glow halo - reduced blur for performance
   ctx.save();
   ctx.shadowColor='#ffff00';
-  ctx.shadowBlur=15;
+  ctx.shadowBlur=8;
   ctx.fillStyle='rgba(255,255,0,0.1)';
   ctx.beginPath();
   ctx.arc(0,0,10,mouth,Math.PI*2-mouth);
@@ -937,7 +1000,7 @@ function drawMsPac(){
   grad.addColorStop(0.6,'#ffff00');
   grad.addColorStop(1,'#e0c000');
   ctx.shadowColor='#ffff00';
-  ctx.shadowBlur=10;
+  ctx.shadowBlur=6; // reduced from 10 for performance
   ctx.fillStyle=grad;
   ctx.beginPath();
   ctx.arc(0,0,8,mouth,Math.PI*2-mouth);
@@ -991,9 +1054,9 @@ function drawMsPac(){
   ctx.save();
   ctx.translate(p.x,p.y);
 
-  // Bow glow
+  // Bow glow - reduced blur for performance
   ctx.shadowColor='#ff69b4';
-  ctx.shadowBlur=8;
+  ctx.shadowBlur=4; // reduced from 8 for performance
   ctx.fillStyle=COLORS.bow;
 
   // Left loop (teardrop)
@@ -1093,7 +1156,7 @@ function drawGhost(g){
     bodyGrad.addColorStop(1, g.darken ? g.darken : g.color);
   }
   ctx.shadowColor = bodyColor;
-  ctx.shadowBlur = scared ? 8 : 12;
+  ctx.shadowBlur = scared ? 4 : 6; // reduced from 8/12 for performance
   ctx.fillStyle = bodyGrad;
 
   // Dome head (smooth semicircle)
@@ -1201,8 +1264,8 @@ function drawFruit(){
   ctx.fillStyle='rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(p.x,p.y+8,5,2,0,0,Math.PI*2); ctx.fill();
 
-  // Glow
-  ctx.shadowColor=fruit.color; ctx.shadowBlur=8;
+  // Glow - reduced blur for performance
+  ctx.shadowColor=fruit.color; ctx.shadowBlur=4; // reduced from 8 for performance
 
   // Stem + leaf (drawn first, behind fruit)
   ctx.fillStyle='#0a0';
@@ -1427,18 +1490,14 @@ function draw(){
     ctx.fillText(p.text, p.x, p.y - rise);
     ctx.restore();
   }
-  // particles (ghost eat bursts, etc.)
+  // particles (ghost eat bursts, etc.) - optimized: no shadowBlur per particle
   for(const p of particles){
     const alpha = Math.max(0, p.life / p.maxLife);
-    ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
-    ctx.shadowBlur = 4;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI*2);
     ctx.fill();
-    ctx.restore();
   }
   if(gameState!=='death'){ drawMsPac(); }
   else if(deathT > 0.5){
@@ -1461,47 +1520,47 @@ function draw(){
   const hudY = 2;
   const hudH = 34;
 
-  // Score panel (left) with neon border
+  // Score panel (left) with neon border - reduced blur for performance
   ctx.fillStyle='rgba(0,0,10,.85)';
   roundRect(ctx, 4, hudY, 140, hudH);
-  ctx.shadowColor='#2121de'; ctx.shadowBlur=6;
+  ctx.shadowColor='#2121de'; ctx.shadowBlur=3; // reduced from 6
   ctx.strokeStyle='rgba(33,33,222,.5)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(4, hudY, 140, hudH, 3); ctx.stroke();
   ctx.shadowBlur=0;
   ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='left';
   ctx.fillText('SCORE', 10, 13);
   ctx.fillStyle=scoreFlash>0?'#fff':'#eef';
-  ctx.shadowColor='#4040ff'; ctx.shadowBlur=scoreFlash>0?10:4;
+  ctx.shadowColor='#4040ff'; ctx.shadowBlur=scoreFlash>0?6:2; // reduced from 10/4
   ctx.font='bold 16px Courier New';
   ctx.fillText(String(score).padStart(6,'0'), 10, 29);
   ctx.shadowBlur=0;
 
-  // High score panel (center) with gold glow
+  // High score panel (center) with gold glow - reduced blur for performance
   ctx.fillStyle='rgba(0,0,10,.85)';
   roundRect(ctx, 152, hudY, 144, hudH);
-  ctx.shadowColor='#ff0'; ctx.shadowBlur=5;
+  ctx.shadowColor='#ff0'; ctx.shadowBlur=3; // reduced from 5
   ctx.strokeStyle='rgba(255,255,0,.3)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(152, hudY, 144, hudH, 3); ctx.stroke();
   ctx.shadowBlur=0;
   ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
   ctx.fillText('HIGH SCORE', 224, 13);
   ctx.fillStyle='#ff0';
-  ctx.shadowColor='#ff0'; ctx.shadowBlur=6;
+  ctx.shadowColor='#ff0'; ctx.shadowBlur=3; // reduced from 6
   ctx.font='bold 16px Courier New';
   ctx.fillText(String(high).padStart(6,'0'), 224, 29);
   ctx.shadowBlur=0;
 
-  // Level panel (right) with green glow
+  // Level panel (right) with green glow - reduced blur for performance
   ctx.fillStyle='rgba(0,0,10,.85)';
   roundRect(ctx, 300, hudY, 144, hudH);
-  ctx.shadowColor='#0f0'; ctx.shadowBlur=5;
+  ctx.shadowColor='#0f0'; ctx.shadowBlur=3; // reduced from 5
   ctx.strokeStyle='rgba(0,255,0,.3)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(300, hudY, 144, hudH, 3); ctx.stroke();
   ctx.shadowBlur=0;
   ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
   ctx.fillText('LEVEL', 372, 13);
   ctx.fillStyle='#0f0';
-  ctx.shadowColor='#0f0'; ctx.shadowBlur=6;
+  ctx.shadowColor='#0f0'; ctx.shadowBlur=3; // reduced from 6
   ctx.font='bold 16px Courier New';
   ctx.fillText(String(level), 372, 29);
   ctx.shadowBlur=0;
@@ -1651,11 +1710,11 @@ function startGame(){
     score=0; lives=3; level=1; extraLife=false;
     createMaze(); resetActors();
     gameState='ready'; readyTimer=2.5;
-    sfx('start'); return;
+    safeSfx('start'); return;
   }
   if(gameState!=='playing'){
     gameState='ready'; readyTimer=2.5;
-    sfx('start'); return;
+    safeSfx('start'); return;
   }
 }
 function setDirection(dir){

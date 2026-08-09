@@ -51,11 +51,11 @@ async function unlockAudio() {
   }
   return audioCtx;
 }
-
+// --- Ambient Hum (single oscillator to prevent leak) ---
 function startAmbientHum() {
   stopAmbientHum();
   if (!audioCtx || audioMuted || !masterGain) return;
-  // Low arcade cabinet hum (50Hz mains hum + mechanical noise)
+  // Low arcade cabinet hum (single oscillator for simplicity and safety)
   ambientHumOsc = audioCtx.createOscillator();
   ambientHumGain = audioCtx.createGain();
   const humFilter = audioCtx.createBiquadFilter();
@@ -67,43 +67,30 @@ function startAmbientHum() {
   humFilter.frequency.value = 100;
 
   ambientHumGain.gain.setValueAtTime(0, audioCtx.currentTime);
-  ambientHumGain.gain.linearRampToValueAtTime(0.015 * audioVolume, audioCtx.currentTime + 2);
+  ambientHumGain.gain.linearRampToValueAtTime(0.012 * audioVolume, audioCtx.currentTime + 2);
 
   ambientHumOsc.connect(ambientHumGain);
   ambientHumGain.connect(humFilter);
   humFilter.connect(masterGain);
 
   ambientHumOsc.start();
-
-  // Second oscillator for mechanical cabinet noise (100Hz harmonic)
-  const humOsc2 = audioCtx.createOscillator();
-  const humGain2 = audioCtx.createGain();
-  humOsc2.type = 'sine';
-  humOsc2.frequency.value = 100;
-  humGain2.gain.setValueAtTime(0, audioCtx.currentTime);
-  humGain2.gain.linearRampToValueAtTime(0.008 * audioVolume, audioCtx.currentTime + 3);
-  humOsc2.connect(humGain2);
-  humGain2.connect(masterGain);
-  humOsc2.start();
-
-  ambientHumOsc._hum2 = humOsc2; // Track for cleanup
+  // Auto-stop after 3 seconds (ambient hum is just for cabinet atmosphere)
+  ambientHumOsc.stop(audioCtx.currentTime + 3);
 }
+
+
 
 function stopAmbientHum() {
-  if (ambientHumGain && audioCtx) {
-    try {
-      const t = audioCtx.currentTime;
-      ambientHumGain.gain.cancelScheduledValues(t);
-      ambientHumGain.gain.setValueAtTime(Math.max(0.0001, ambientHumGain.gain.value), t);
-      ambientHumGain.gain.linearRampToValueAtTime(0, t + 0.5);
-      setTimeout(() => {
-        if (ambientHumOsc) { try { ambientHumOsc.stop(); } catch (_) {} }
-        if (ambientHumOsc && ambientHumOsc._hum2) { try { ambientHumOsc._hum2.stop(); } catch (_) {} }
-        ambientHumOsc = null;
-      }, 600);
-    } catch (_) {}
+  if (ambientHumOsc) {
+    try { ambientHumOsc.stop(); } catch (_) {}
+    ambientHumOsc = null;
+  }
+  if (ambientHumGain) {
+    try { ambientHumGain.disconnect(); } catch (_) {}
+    ambientHumGain = null;
   }
 }
+
 
 function setMuted(muted) {
   audioMuted = muted;
@@ -137,34 +124,29 @@ function beep(freq, dur, type = 'square', gain = 0.06, when = 0, slideTo = null)
   o.start(t0); o.stop(t0 + dur + 0.02);
 }
 
-// --- Ms. Pac-Man Chomp SFX (AAA enhanced: richer harmonics, sharper transient) ---
-// Short 100ms burst with fundamental + 2nd harmonic for fuller arcade chomp
+// --- Ms. Pac-Man Chomp SFX (simplified: 1 oscillator + throttle to prevent audio context exhaustion) ---
+// Mobile Safari freezes when too many oscillators accumulate (~100+ in 5-10 seconds)
+let lastChompTime = 0;
 function playChomp() {
   if (!audioCtx || audioMuted) return;
+  // Throttle: max 1 chomp per 80ms to prevent oscillator buildup on mobile
+  const now = audioCtx.currentTime;
+  if (now - lastChompTime < 0.08) return;
+  lastChompTime = now;
   const t0 = audioCtx.currentTime;
-  // Fundamental
-  const o1 = audioCtx.createOscillator();
-  const g1 = audioCtx.createGain();
-  o1.type = 'square';
-  o1.frequency.setValueAtTime(220, t0);
-  o1.frequency.exponentialRampToValueAtTime(140, t0 + 0.1);
-  g1.gain.setValueAtTime(0.0001, t0);
-  g1.gain.exponentialRampToValueAtTime(0.12 * audioVolume, t0 + 0.003);
-  g1.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
-  o1.connect(g1); g1.connect(masterGain || audioCtx.destination);
-  o1.start(t0); o1.stop(t0 + 0.12);
-  // 2nd harmonic for "bite" texture
-  const o2 = audioCtx.createOscillator();
-  const g2 = audioCtx.createGain();
-  o2.type = 'sawtooth';
-  o2.frequency.setValueAtTime(440, t0);
-  o2.frequency.exponentialRampToValueAtTime(280, t0 + 0.06);
-  g2.gain.setValueAtTime(0.0001, t0);
-  g2.gain.exponentialRampToValueAtTime(0.04 * audioVolume, t0 + 0.002);
-  g2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
-  o2.connect(g2); g2.connect(masterGain || audioCtx.destination);
-  o2.start(t0); o2.stop(t0 + 0.1);
+  // Single oscillator: square wave with frequency sweep for arcade chomp feel
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'square';
+  o.frequency.setValueAtTime(220, t0);
+  o.frequency.exponentialRampToValueAtTime(140, t0 + 0.1);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(0.12 * audioVolume, t0 + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+  o.connect(g); g.connect(masterGain || audioCtx.destination);
+  o.start(t0); o.stop(t0 + 0.12);
 }
+
 
 // --- Power Pellet SFX (AAA enhanced: brighter arpeggio with tremolo) ---
 // Rising arpeggio: 200->700Hz over 500ms, 4 oscillator steps with tremolo
@@ -679,8 +661,12 @@ function startSiren() {
     g.gain.exponentialRampToValueAtTime(0.025, audioCtx.currentTime + 0.15);
     o.start();
     sirenOsc = o; sirenGain = g;
+    // Ensure oscillator is stopped when game state changes (prevents leak)
+    o.addEventListener('ended', () => { sirenOsc = null; sirenGain = null; });
   } catch (_) {}
 }
+
+
 
 function updateSiren(state, powerT, eaten, total) {
   if (!sirenOsc || !audioCtx || state !== 'playing') return;

@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
+<title>MS. PAC-MAN v3.0 AAA Edition</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
+body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
+canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33,222,.6),0 0 60px rgba(33,33,222,.3),0 0 90px rgba(33,33,222,.15),inset 0 0 30px rgba(33,33,222,.1);image-rendering:pixelated;max-width:min(calc(100vw - 6px),720px);max-height:100vh;width:auto;height:auto;background:#000}
+/* CRT scanlines overlay */
+canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;opacity:.4}
+#game-wrap{position:relative;display:inline-block;border:2px solid #1a1a8e}
+.status{position:fixed;top:8px;left:0;width:100%;color:#ffb8ff;text-align:center;font-size:15px;font-weight:bold;pointer-events:none;text-shadow:0 0 8px #2121de,0 2px 4px #000;z-index:5}
+#controls{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:170px;height:170px;z-index:10}
+.dpad{position:absolute;width:52px;height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(33,33,222,.35);color:#fff;font-size:24px;line-height:1;box-shadow:0 0 8px rgba(33,33,222,.3)}
+.dpad:active{background:rgba(255,184,255,.35);transform:scale(.96);box-shadow:0 0 12px rgba(255,184,255,.5)}
+.up{left:59px;top:0}.left{left:0;top:59px}.down{left:59px;top:59px}.right{left:118px;top:59px}
+</style>
+</head>
+<body>
+<div class="status" id="status">MS. PAC-MAN v3.0 AAA Edition • tap D-pad / arrows to start</div>
+<canvas id="game" width="448" height="576"></canvas>
+<div id="controls" aria-label="direction controls">
+  <button data-dir="1" class="dpad up" type="button">▲</button>
+  <button data-dir="2" class="dpad left" type="button">◀</button>
+  <button data-dir="3" class="dpad down" type="button">▼</button>
+  <button data-dir="0" class="dpad right" type="button">▶</button>
+</div>
+<script src="audio.js?v=2"></script>
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const TILE = 16, COLS = 28;
+let ROWS = 0;
+const DIRS = [[1,0],[0,-1],[-1,0],[0,1]]; // R U L D
+const COLORS = {
+  wall:'#2121de', pellet:'#ffffff', power:'#ffb897',
+  pac:'#ffff00', bow:'#ff69b4',
+  blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
+  scared:'#2121ff', eyes:'#fff', text:'#dedeff'
+};
+const GAME_VERSION = '3.0';
+
+// High score table (arcade-faithful: 5 scrolling scores)
+let highScores = [];
+try {
+  const saved = JSON.parse(localStorage.getItem('mspacHighScores') || '[]');
+  highScores = saved.slice(0, 5);
+} catch(e) { highScores = []; }
+
+function safeStorage() {
+  try { localStorage.setItem('mspacHighScores', JSON.stringify(highScores)); return true; }
+  catch(e) { return false; }
+}
+function updateHighScore(score) {
+  if (score <= highScores[0] && highScores.length > 0) return;
+  highScores.push(score);
+  highScores.sort((a, b) => b - a);
+  highScores = highScores.slice(0, 5);
+  safeStorage();
+}
+
+// --- state ---
+let score=0, high=+localStorage.getItem('mspacHigh')||0, lives=3, level=1, extraLife=false;
+let gameState='title'; // title|playing|death|intermission|gameover
+let titlePrompt='start';
+let maze=[], totalPellets=0, pelletsEaten=0, powerTimer=0, ghostCombo=0;
+let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, deathT=0;
+let scorePopups=[]; // {x,y,text,t,color}
+let particles=[]; // {x,y,vx,vy,life,maxLife,color,size}
+let scheduleIndex=0, scheduleTimer=0;
+let intermission=null; // {act, t, dur}
+let readyTimer=0; // countdown before gameplay
+let tunnelFlash=0; // tunnel wrap flash timer
+let scoreFlash=0; // brief HUD flash on score change
+let shakeX=0, shakeY=0, shakeT=0; // screen shake state
+const TUNNEL_ROW = 14;
+const PAC_SPEED = 12.0; // Ms. Pac-Man is faster than Pac-Man (11.0)
+const PAC_SPEED_POWER = 14.0; // Speed boost during power pellet (arcade-faithful)
+const GHOST_BASE = [10.0, 9.8, 9.6, 9.4];
+
+// Ms. Pac-Man ghosts NEVER scatter during gameplay - they always chase (more aggressive)
+const SCHEDULE = [
+  {mode:'chase', duration:Infinity}
+];
+const HOUSE_DELAY = [0, 2.5, 5.0, 7.5]; // seconds (arcade-faithful)
+
+// Ms. Pac-Man fruit by level (values classic-ish)
+const FRUIT_TABLE = [
+  {name:'CHERRY', color:'#ff0000', pts:100},
+  {name:'STRAWBERRY', color:'#ff3040', pts:200},
+  {name:'ORANGE', color:'#ffb852', pts:500},
+  {name:'PRETZEL', color:'#d4a574', pts:700},
+  {name:'APPLE', color:'#00ff00', pts:1000},
+  {name:'PEAR', color:'#00ff80', pts:2000},
+  {name:'BANANA', color:'#ffff00', pts:5000}
+];
+
+// --- audio module loaded externally (audio.js) ---
+
+// --- maze (28×31, Ms. Pac-Man style asymmetric corridors) ---
+function createMaze(){
+  // 0 empty, 1 wall, 2 pellet, 3 power, 4 house gate, 5 house interior
+  maze = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+    [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+    [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+    [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+    [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+    [1,1,1,1,1,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,1,1,1,1,1],
+    [0,0,0,0,0,1,2,1,1,1,1,1,0,1,1,0,1,1,1,1,1,2,1,0,0,0,0,0],
+    [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+    [0,0,0,0,0,1,2,1,1,0,1,1,1,4,4,1,1,1,0,1,1,2,1,0,0,0,0,0],
+    [1,1,1,1,1,1,2,1,1,0,1,5,5,5,5,5,5,1,0,1,1,2,1,1,1,1,1,1],
+    [0,0,0,0,0,0,2,0,0,0,1,5,5,5,5,5,5,1,0,0,0,2,0,0,0,0,0,0],
+    [1,1,1,1,1,1,2,1,1,0,1,5,5,5,5,5,5,1,0,1,1,2,1,1,1,1,1,1],
+    [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+    [0,0,0,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,1,1,2,1,0,0,0,0,0],
+    [0,0,0,0,0,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,0,0,0,0,0],
+    [1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+    [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+    [1,3,2,2,1,1,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,1,1,2,2,3,1],
+    [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+    [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+    [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+    [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+    [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ].map(row => row.slice());
+  ROWS = maze.length;
+  // Cache pellet count instead of scanning maze every time
+  totalPellets = 0;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(maze[y][x]===2||maze[y][x]===3) totalPellets++;
+  pelletsEaten = 0;
+  fruit = null;
+}
+
+// --- actors ---
+function opposite(d){ return (d+2)%4; }
+function makeActor(col,row,dir,speed,color,name){
+  return {col,row,fromCol:col,fromRow:row,toCol:col,toRow:row,dir,nextDir:dir,progress:0,moving:false,speed,color,name,anim:0,eaten:false,inHouse:false,houseT:0};
+}
+function posOf(a){
+  const x=a.moving?a.fromCol+(a.toCol-a.fromCol)*a.progress:a.col;
+  const y=a.moving?a.fromRow+(a.toRow-a.fromRow)*a.progress:a.row;
+  return {x:x*TILE+8,y:y*TILE+8};
+}
+function cellWalkable(x,y,forGhost){
+  if(y<0||y>=ROWS||x<0||x>=COLS) return false;
+  const c=maze[y][x];
+  if(c===1) return false;
+  if(c===4) return !!forGhost; // gate: ghosts only
+  if(c===5) return !!forGhost;
+  return true;
+}
+function resolveMove(actor, dir, forGhost){
+  const dx=DIRS[dir][0], dy=DIRS[dir][1];
+  let nx=actor.col+dx, ny=actor.row+dy, wrapped=false;
+  if(ny<0||ny>=ROWS) return null;
+  if(nx<0 && actor.row===TUNNEL_ROW && dir===2){ nx=COLS-1; wrapped=true; }
+  else if(nx>=COLS && actor.row===TUNNEL_ROW && dir===0){ nx=0; wrapped=true; }
+  if(nx<0||nx>=COLS) return null;
+  if(!cellWalkable(nx,ny,forGhost)) return null;
+  // pacman blocked by gate
+  if(!forGhost && (maze[ny][nx]===4||maze[ny][nx]===5)) return null;
+  return {nx,ny,wrapped};
+}
+function startStep(actor, dir, forGhost){
+  const m=resolveMove(actor,dir,forGhost);
+  if(!m) return false;
+  actor.fromCol=actor.col; actor.fromRow=actor.row;
+  actor.toCol=m.nx; actor.toRow=m.ny;
+  actor.progress=0; actor.moving=true; actor.dir=dir;
+  if(m.wrapped){
+    actor.col=m.nx; actor.row=m.ny;
+    actor.fromCol=m.nx; actor.fromRow=m.ny;
+    actor.toCol=m.nx; actor.toRow=m.ny;
+    actor.progress=0; actor.moving=false;
+    tunnelFlash=0.35; // brief flash on wrap
+  }
+  return true;
+}
+function advance(actor, dt){
+  if(!actor.moving) return false;
+  actor.progress += dt * actor.speed;
+  if(actor.progress<1) return false;
+  actor.col=actor.toCol; actor.row=actor.toRow;
+  actor.fromCol=actor.col; actor.fromRow=actor.row;
+  actor.progress=0; actor.moving=false;
+  return true;
+}
+
+function resetActors(){
+  pacman = makeActor(14, 23, 2, PAC_SPEED, COLORS.pac, 'MsPac');
+  pacman.nextDir = 2;
+  powerTimer=0; ghostCombo=0;
+  scheduleIndex=0; scheduleTimer=0;
+  ghosts = [
+    makeActor(14, 11, 1, GHOST_BASE[0], COLORS.blinky, 'Blinky'),
+    makeActor(12, 14, 1, GHOST_BASE[1], COLORS.pinky, 'Pinky'),
+    makeActor(14, 14, 1, GHOST_BASE[2], COLORS.inky, 'Inky'),
+    makeActor(16, 14, 1, GHOST_BASE[3], COLORS.clyde, 'Clyde')
+  ];
+  ghosts.forEach((g,i)=>{
+    g.inHouse = i!==0;
+    g.houseT = HOUSE_DELAY[i];
+    g.eaten=false;
+    if(i===0){ g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11; g.inHouse=false; }
+  });
+  fruit=null;
+}
+
+// Ghost AI targets - Ms. Pac-Man ghosts ALWAYS chase, never scatter
+function targetFor(i){
+  const g=ghosts[i];
+  if(g.eaten) return {x:14,y:14}; // home
+  if(powerTimer>0 && !g.eaten){
+    // frightened: random-ish via far pseudo target
+    return {x:(Math.random()*COLS)|0, y:(Math.random()*ROWS)|0};
+  }
+  // Always chase in Ms. Pac-Man (no scatter phases)
+  // chase personalities
+  if(i===0) return {x:pacman.col, y:pacman.row}; // Blinky
+  if(i===1){ // Pinky 4 ahead
+    const d=DIRS[pacman.dir];
+    return {x:pacman.col+d[0]*4, y:pacman.row+d[1]*4};
+  }
+  if(i===2){ // Inky: blinky vector doubled from pac+2
+    const d=DIRS[pacman.dir];
+    const px=pacman.col+d[0]*2, py=pacman.row+d[1]*2;
+    const bx=ghosts[0].col, by=ghosts[0].row;
+    return {x:px+(px-bx), y:py+(py-by)};
+  }
+  // Clyde: always chase Ms. Pac-Man (Ms. Pac-Man removed Clyde's scatter behavior)
+  return {x:pacman.col, y:pacman.row};
+}
+
+// Fruit path (Ms. Pac-Man: fruit follows HARDCODED path, not random wander)
+// Fruit spawns at a tunnel entrance and bounces clockwise around the maze
+// Path 1: enters from left tunnel, loops clockwise around ghost house, exits right
+const FRUIT_PATH_1 = [
+  {x:0,y:14},{x:1,y:14},{x:2,y:14},{x:3,y:14},{x:4,y:14},{x:5,y:14},
+  {x:6,y:14},{x:7,y:14},{x:8,y:14},{x:9,y:14},{x:10,y:14},
+  {x:10,y:15},{x:10,y:16},{x:10,y:17},{x:10,y:18},{x:10,y:19},
+  {x:11,y:19},{x:12,y:19},{x:13,y:19},{x:14,y:19},{x:15,y:19},
+  {x:16,y:19},{x:17,y:19},{x:18,y:19},{x:19,y:19},
+  {x:19,y:18},{x:19,y:17},{x:19,y:16},{x:19,y:15},{x:19,y:14},
+  {x:20,y:14},{x:21,y:14},{x:22,y:14},{x:23,y:14},{x:24,y:14},
+  {x:25,y:14},{x:26,y:14},{x:27,y:14},
+];
+
+// Path 2: enters from right tunnel, loops counter-clockwise around ghost house, exits left
+const FRUIT_PATH_2 = [
+  {x:27,y:14},{x:26,y:14},{x:25,y:14},{x:24,y:14},{x:23,y:14},{x:22,y:14},
+  {x:21,y:14},{x:20,y:14},{x:19,y:14},
+  {x:19,y:15},{x:19,y:16},{x:19,y:17},{x:19,y:18},{x:19,y:19},
+  {x:18,y:19},{x:17,y:19},{x:16,y:19},{x:15,y:19},{x:14,y:19},
+  {x:13,y:19},{x:12,y:19},{x:11,y:19},
+  {x:10,y:19},{x:10,y:18},{x:10,y:17},{x:10,y:16},{x:10,y:15},
+  {x:10,y:14},{x:9,y:14},{x:8,y:14},{x:7,y:14},{x:6,y:14},
+  {x:5,y:14},{x:4,y:14},{x:3,y:14},{x:2,y:14},{x:1,y:14},
+  {x:0,y:14},
+];
+
+function spawnFruit(){
+  const f = FRUIT_TABLE[Math.min(FRUIT_TABLE.length-1, level-1)];
+  // Choose random direction (left or right tunnel entry)
+  const path = Math.random() < 0.5 ? FRUIT_PATH_1 : FRUIT_PATH_2;
+  fruit = {
+    ...f,
+    path: path,
+    pathIndex: 0, // current position in hardcoded path
+    life: 10 + Math.random()*2,
+    active:true
+  };
+  // Start at the first position of chosen path
+  fruit.col = path[0].x;
+  fruit.row = path[0].y;
+  fruit.fromCol = path[0].x;
+  fruit.fromRow = path[0].y;
+  fruit.toCol = path[0].x;
+  fruit.toRow = path[0].y;
+  fruit.progress = 0;
+  fruit.moving = false;
+}
+
+function updateFruit(dt){
+  if(!fruit||!fruit.active) return;
+  fruit.life -= dt;
+  if(fruit.life<=0){ fruit=null; return; }
+
+  // Collect: pixel proximity check
+  const fp=posOf(fruit), pp=posOf(pacman);
+  if((fp.x-pp.x)**2+(fp.y-pp.y)**2 < 100){
+    score += fruit.pts;
+    safeSfx('fruit');
+    // spawn floating score popup at fruit position with name (gold)
+    scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.name} ${fruit.pts}`, t:1.0, color:'#ffcc00'});
+    fruit=null;
+    checkExtra();
+    return;
+  }
+
+  // Follow hardcoded path (arcade-faithful)
+  if(fruit.pathIndex >= fruit.path.length){
+    // Path complete: blink before disappearing (arcade-faithful)
+    fruit.blink = true;
+    fruit.blinkTimer = 0.3;
+    return;
+  }
+
+  // Blink timer for disappearing fruit
+  if(fruit.blink){
+    fruit.blinkTimer -= dt;
+    if(fruit.blinkTimer <= 0){
+      fruit = null;
+      return;
+    }
+  }
+
+  const target = fruit.path[fruit.pathIndex];
+  fruit.toCol = target.x;
+  fruit.toRow = target.y;
+
+  if(fruit.col === target.x && fruit.row === target.y){
+    // Arrived at next waypoint, move to next
+    fruit.pathIndex++;
+    if(fruit.pathIndex < fruit.path.length){
+      const next = fruit.path[fruit.pathIndex];
+      fruit.fromCol = fruit.col;
+      fruit.fromRow = fruit.row;
+      fruit.toCol = next.x;
+      fruit.toRow = next.y;
+      fruit.moving = true;
+    } else {
+      // End of path: disappear via tunnel
+      fruit = null;
+      return;
+    }
+  }
+
+  if(fruit.moving){
+    fruit.progress += dt * fruit.speed / 6;
+    if(fruit.progress >= 1){
+      fruit.col = fruit.toCol;
+      fruit.row = fruit.toRow;
+      fruit.fromCol = fruit.col;
+      fruit.fromRow = fruit.row;
+      fruit.progress = 0;
+      fruit.moving = false;
+    }
+    return;
+  }
+}
+
+function checkExtra(){
+  // Extra life every 10k points (arcade standard)
+  const threshold = Math.floor(score/10000)*10000;
+  if(!extraLife && score>=threshold+10000){
+    lives++; extraLife=true; safeSfx('extra');
+    tunnelFlash=0.6; // bright screen flash on extra life
+  }
+  if(score>high){ high=score; safeSetHigh(); }
+}
+
+function safeSetHigh(){
+  try { localStorage.setItem('mspacHigh', String(high)); } catch(e) {}
+}
+
+// Safe audio wrappers — prevent crashes if audio.js fails to load
+function safeSfx(name){ try { sfx(name); } catch(e) {} }
+function safeStartSiren(){ try { startSiren(); } catch(e) {} }
+function safeStopSiren(){ try { stopSiren(); } catch(e) {} }
+function safeUpdateSiren(s,p,e,t){ try { updateSiren(s,p,e,t); } catch(e) {} }
+
+function handlePellet(){
+  const c=maze[pacman.row][pacman.col];
+  if(c===2){
+    maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; safeSfx('waka'); scoreFlash=0.15; checkExtra();
+    // Fruit triggers at ~64 dots and when 66 remain (arcade-faithful)
+    if(pelletsEaten===64) spawnFruit();
+    // remainingPellets = totalPellets - pelletsEaten (cached, no maze scan)
+    if(totalPellets - pelletsEaten === 66 && !fruit) spawnFruit();
+    // Particle burst on pellet eat (tiny golden sparkles)
+    const pp=posOf(pacman);
+    for(let i=0;i<4;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=15+Math.random()*25;
+      particles.push({x:pp.x,y:pp.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:0.35,maxLife:0.35,color:'#ffb897',size:1.5+Math.random()*1});
+    }
+  } else if(c===3){
+    maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++; scoreFlash=0.2;
+    powerTimer = Math.max(4, 9 - (level-1)*0.7);
+    ghostCombo=0;
+    ghosts.forEach(g=>{ if(!g.eaten && !g.inHouse) g.dir=opposite(g.dir); });
+    safeSfx('power'); checkExtra();
+    // dramatic screen shake on power pellet
+    shakeT = 0.3;
+  }
+  // level clear
+  if(pelletsEaten>=totalPellets){
+    // Level clear bonus points (arcade standard: 10000 per life remaining)
+    const bonus = lives * 10000;
+    score += bonus;
+    safeStopSiren();
+    safeSfx('level');
+    tunnelFlash=0.5; // brief screen flash on level clear
+    // Show bonus popup
+    scorePopups.push({x:canvas.width/2, y:canvas.height/2-40, text:`+${bonus}`, t:2.0, color:'#ff0'});
+    // Bonus particle burst on level clear
+    for(let i=0;i<30;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=60+Math.random()*120;
+      particles.push({x:canvas.width/2,y:canvas.height/2,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-40,life:1.2,maxLife:1.2,color:'#ffff00',size:3+Math.random()*3});
+    }
+    startIntermissionOrNext();
+  }
+}
+
+function startIntermissionOrNext(){
+  // Acts after completing levels 2, 5, 9, 13...
+  const actMap = {2:1, 5:2, 9:3, 13:1, 17:2, 21:3};
+  const act = actMap[level];
+  if(act){
+    gameState='intermission';
+    intermission={act, t:0, dur:6.5};
+    playIntermissionMusic(act);
+    statusEl.textContent = `THEY MEET — ACT ${act}`;
+    if(act===2) statusEl.textContent = 'THE CHASE';
+    if(act===3) statusEl.textContent = 'JUNIOR';
+  } else {
+    nextLevel();
+  }
+}
+function nextLevel(){
+  level++;
+  createMaze();
+  resetActors();
+  gameState='playing';
+  statusEl.textContent = `LEVEL ${level}`;
+  safeStartSiren();
+}
+
+function updatePac(dt){
+  // Ms. Pac-Man speed increases during power pellet (arcade-faithful)
+  const effectiveSpeed = powerTimer > 0 ? PAC_SPEED_POWER : PAC_SPEED;
+
+  // Track Pac-Man movement for stuck detection
+  if(pacman.moving){
+    pacman.lastMoveProgress = pacman.progress;
+    pacman.stuckTimer = 0;
+  } else {
+    pacman.stuckTimer = (pacman.stuckTimer||0) + dt;
+    // If stuck for >3 seconds, force a direction change using nextDir or current dir
+    if(pacman.stuckTimer > 3){
+      if(resolveMove(pacman,pacman.nextDir,false)){
+        startStep(pacman,pacman.nextDir,false);
+      } else if(resolveMove(pacman,pacman.dir,false)){
+        startStep(pacman,pacman.dir,false);
+      } else {
+        // Try all 4 directions as last resort
+        for(let d=0;d<4;d++){
+          if(resolveMove(pacman,d,false)){
+            startStep(pacman,d,false);
+            break;
+          }
+        }
+      }
+      pacman.stuckTimer = 0;
+    }
+  }
+
+  const landed=advance(pacman,dt);
+  if(landed){ pacman.anim++; handlePellet(); }
+  if(pacman.moving){ pacman.anim+=dt*12; return; }
+  // Use effective speed for movement step
+  const origSpeed = pacman.speed;
+  pacman.speed = effectiveSpeed;
+  if(resolveMove(pacman,pacman.nextDir,false)) startStep(pacman,pacman.nextDir,false);
+  else if(resolveMove(pacman,pacman.dir,false)) startStep(pacman,pacman.dir,false);
+  pacman.speed = origSpeed; // restore for advance()
+}
+
+function updateGhost(g,i,dt){
+  // speed mods
+  g.speed = GHOST_BASE[i] * (1 + (level-1)*0.04);
+  if(powerTimer>0 && !g.eaten) g.speed *= 0.55;
+  if(g.eaten) g.speed = 10;
+
+  if(g.inHouse){
+    g.houseT -= dt;
+    if(g.houseT<=0){
+      g.inHouse=false;
+      g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11;
+      g.moving=false; g.dir=1;
+    }
+    // Arcade-faithful: ghosts visibly bounce in ghost house (staggered exit timing)
+    g.anim = (g.anim||0) + dt;
+    // Vertical bounce: oscillate up/down by 2 pixels (each ghost has different phase)
+    const ghostPhase = i * 1.5; // stagger each ghost's bounce phase
+    g.row = 11 + Math.sin(g.anim * 6 + ghostPhase) * 0.5;
+    return;
+  }
+  // return home when eaten
+  if(g.eaten && g.col===14 && g.row===14){
+    g.eaten=false; g.inHouse=true; g.houseT=1.2;
+  }
+
+  // Track ghost movement for stuck detection
+  if(g.moving){
+    g.lastMoveProgress = g.progress;
+    g.stuckTimer = 0;
+  } else {
+    g.stuckTimer = (g.stuckTimer||0) + dt;
+    // If stuck for >2 seconds, force a direction change
+    if(g.stuckTimer > 2){
+      const newDir = (g.dir + (Math.random() < 0.5 ? 1 : 3)) % 4;
+      if(resolveMove(g, newDir, true)){
+        startStep(g, newDir, true);
+        g.stuckTimer = 0;
+      } else {
+        // Try opposite direction as last resort
+        const opp = opposite(g.dir);
+        if(resolveMove(g, opp, true)) startStep(g, opp, true);
+      }
+    }
+  }
+
+  const landed=advance(g,dt);
+  if(landed) g.anim++;
+  if(g.moving) return;
+  const dir=pickGhostDir(g,i);
+  startStep(g,dir,true);
+}
+
+function pickGhostDir(g,i){
+  const target=targetFor(i);
+  const opts=[];
+  for(let dir=0;dir<4;dir++){
+    if(dir===opposite(g.dir) && !g.eaten && powerTimer<=0) continue;
+    const m=resolveMove(g,dir,true);
+    if(!m) continue;
+    const dist=Math.abs(m.nx-target.x)+Math.abs(m.ny-target.y);
+    opts.push({dir,dist});
+  }
+  if(!opts.length){
+    for(let d=0;d<4;d++) if(resolveMove(g,d,true)) return d;
+    return g.dir;
+  }
+  if(powerTimer>0 && !g.eaten) return opts[(Math.random()*opts.length)|0].dir;
+  opts.sort((a,b)=>a.dist-b.dist || a.dir-b.dir);
+  return opts[0].dir;
+}
+
+function collide(){
+  const pp=posOf(pacman);
+  for(const g of ghosts){
+    if(g.inHouse) continue;
+    const gp = g.eaten ? null : posOf(g);
+    if(!gp) continue;
+    const dx=pp.x-gp.x, dy=pp.y-gp.y;
+    if(dx*dx+dy*dy > 72) continue;
+    if(powerTimer>0 && !g.eaten){
+      ghostCombo++;
+      const pts = 200 * Math.pow(2, Math.min(3,ghostCombo-1));
+      score += pts;
+      // floating score popup at ghost position (white)
+      const gp = posOf(g);
+      scorePopups.push({x:gp.x, y:gp.y-8, text:`${pts}`, t:1.0, color:'#fff'});
+      // Spawn particle burst at ghost position
+      for(let pi=0;pi<12;pi++){
+        const angle=Math.random()*Math.PI*2;
+        const speed=30+Math.random()*60;
+        particles.push({x:gp.x,y:gp.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:0.6,maxLife:0.6,color:g.eaten?'#fff':g.color,size:2+Math.random()*2});
+      }
+      g.eaten=true; safeSfx('ghost'); checkExtra();
+      return;
+    }
+    if(g.eaten) continue;
+    // death
+    lives--; safeSfx('die'); safeStopSiren();
+    gameState='death'; deathT=2.0;
+    shakeT = 0.5; // heavy shake on death
+    return;
+  }
+}
+
+function update(dt){
+  if(gameState==='intermission'){
+    intermission.t += dt;
+    if(intermission.t >= intermission.dur){
+      intermission=null;
+      nextLevel();
+    }
+    return;
+  }
+  if(gameState==='death'){
+    deathT -= dt;
+    if(deathT<=0){
+      if(lives<=0){
+        gameState='gameover';
+        titlePrompt='start';
+        statusEl.textContent='GAME OVER';
+        if(score>high){ high=score; safeSetHigh(); }
+      } else {
+        resetActors();
+        gameState='ready';
+        readyTimer=2.5;
+      }
+    }
+    return;
+  }
+  if(gameState==='ready'){
+    readyTimer -= dt;
+    if(readyTimer<=0){
+      gameState='playing';
+      statusEl.textContent='Playing';
+      safeStartSiren();
+    }
+    return;
+  }
+  if(gameState!=='playing') return;
+
+  // tunnel flash decay
+  if(tunnelFlash>0) tunnelFlash=Math.max(0,tunnelFlash-dt);
+  // score flash decay
+  if(scoreFlash>0) scoreFlash=Math.max(0,scoreFlash-dt);
+  // screen shake decay
+  if(shakeT>0){
+    shakeT -= dt;
+    const intensity = shakeT > 0.1 ? 4 : shakeT * 40;
+    shakeX = (Math.random()-0.5) * intensity;
+    shakeY = (Math.random()-0.5) * intensity;
+  } else { shakeX=0; shakeY=0; }
+
+  // scatter/chase clock
+  if(powerTimer<=0){
+    scheduleTimer += dt;
+    const cur=SCHEDULE[scheduleIndex];
+    if(scheduleTimer>=cur.duration){
+      scheduleTimer=0;
+      scheduleIndex=Math.min(scheduleIndex+1, SCHEDULE.length-1);
+    }
+  }
+
+  updatePac(dt);
+  ghosts.forEach((g,i)=>updateGhost(g,i,dt));
+  updateFruit(dt);
+  if(powerTimer>0) powerTimer=Math.max(0,Math.min(10,powerTimer-dt)); // cap at 10s max
+  if(powerTimer===0) ghostCombo=0;
+  // update score popups
+  for(let i=scorePopups.length-1;i>=0;i--){
+    const p=scorePopups[i];
+    if(!isFinite(p.t)) { scorePopups.splice(i,1); continue; }
+    p.t -= dt;
+    if(!isFinite(p.y)) { scorePopups.splice(i,1); continue; }
+    p.y -= 20*dt; // float up
+    if(p.t<=0) scorePopups.splice(i,1);
+  }
+  // update particles (logic only — drawing stays in draw() to avoid canvas slowdown)
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    if(!isFinite(p.life)) { particles.splice(i,1); continue; }
+    p.life -= dt;
+    if(!isFinite(p.x) || !isFinite(p.y)) { particles.splice(i,1); continue; }
+    p.x += p.vx*dt;
+    p.y += p.vy*dt;
+    p.vy += 80*dt; // gravity
+    if(p.life<=0){ particles.splice(i,1); }
+  }
+  collide();
+  safeUpdateSiren(gameState, powerTimer, pelletsEaten, totalPellets);
+}
+
+// --- draw ---
+function drawWalls(){
+  // AAA fidelity: Ms. Pac-Man uses SOLID FILL walls (not outline lines)
+  // with per-level color cycling. This is the key visual difference from Pac-Man.
+
+  const wallColor = getWallColorForLevel(level);
+
+  // Draw contiguous wall regions (not per-tile) to avoid visible seams
+  ctx.fillStyle = wallColor;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    // Find the right edge of this wall segment
+    let endX = x;
+    while(endX+1<COLS && maze[y][endX+1]===1) endX++;
+    ctx.fillRect(x*TILE, y*TILE, (endX-x+1)*TILE, TILE);
+  }
+
+  // Bevel: top-left highlight with secondary accent color (arcade-faithful)
+  const secondaryColor = getSecondaryColorForLevel(level);
+  ctx.fillStyle = `rgba(255,255,255,0.12)`;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    if(y>0 && maze[y-1][x]!==1) ctx.fillRect(x*TILE, y*TILE, TILE, 2);
+    if(x>0 && maze[y][x-1]!==1) ctx.fillRect(x*TILE, y*TILE, 2, TILE);
+  }
+
+  // Secondary color accents: subtle glow on wall edges matching arcade accent colors
+  ctx.save();
+  ctx.shadowColor = secondaryColor;
+  ctx.shadowBlur = 4;
+  ctx.strokeStyle = `rgba(255,255,255,0.06)`;
+  ctx.lineWidth = 1;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    // Draw edge lines where walls meet empty space
+    if(y>0 && maze[y-1][x]!==1){
+      ctx.beginPath();
+      ctx.moveTo(x*TILE, y*TILE);
+      ctx.lineTo((x+1)*TILE, y*TILE);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // Bevel: bottom-right shadow (2px edge)
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    if(y<ROWS-1 && maze[y+1][x]!==1) ctx.fillRect(x*TILE, y*TILE+TILE-2, TILE, 2);
+    if(x<COLS-1 && maze[y][x+1]!==1) ctx.fillRect(x*TILE+TILE-2, y*TILE, 2, TILE);
+  }
+
+  // Maze border: outer edge glow for cabinet presence - reduced blur for performance
+  ctx.save();
+  ctx.shadowColor = wallColor;
+  ctx.shadowBlur = 6; // reduced from 12 for performance
+  ctx.strokeStyle = wallColor;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0.5, 0.5, COLS*TILE-1, ROWS*TILE-1);
+  ctx.restore();
+
+  // Draw doors and house interior
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      const c = maze[y][x];
+      if(c===4){
+        // Arcade-faithful: pink gate line (thin horizontal bar)
+        const px=x*TILE, py=y*TILE;
+        ctx.fillStyle='#ffb8ff';
+        ctx.fillRect(px+1, py+7, TILE-2, 2);
+      } else if(c===5){
+        // Ghost house interior: darker version of wall color
+        ctx.fillStyle = darkenColor(wallColor, 0.3);
+        ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
+      }
+    }
+  }
+}
+
+// --- Maze color cycling (arcade-faithful Ms. Pac-Man) ---
+function getWallColorForLevel(lv){
+  // Levels 1-2: Pink walls (secondary: lilac)
+  if(lv<=2) return '#cc4488';
+  // Levels 3-5: Light blue walls (secondary: pink)
+  if(lv<=5) return '#4488cc';
+  // Levels 6-9: Orange/brown walls (secondary: lilac)
+  if(lv<=9) return '#cc8844';
+  // Levels 10-13: Dark blue walls (secondary: pink)
+  if(lv<=13) return '#2244aa';
+  // Levels 14+: alternate Brown (6-9) and Dark Blue (10-13) every 4 levels
+  const cycle = Math.floor((lv - 14) / 4);
+  return (cycle % 2 === 0) ? '#cc8844' : '#2244aa';
+}
+
+// Secondary accent color for each maze (arcade-faithful)
+function getSecondaryColorForLevel(lv){
+  // Levels 1-2: Lilac accent on pink maze
+  if(lv<=2) return '#dda0dd';
+  // Levels 3-5: Pink accent on light blue maze
+  if(lv<=5) return '#ff69b4';
+  // Levels 6-9: Lilac accent on orange maze
+  if(lv<=9) return '#dda0dd';
+  // Levels 10-13: Pink accent on dark blue maze
+  if(lv<=13) return '#ff69b4';
+  // Levels 14+: alternate
+  const cycle = Math.floor((lv - 14) / 4);
+  return (cycle % 2 === 0) ? '#dda0dd' : '#ff69b4';
+}
+
+// Cabinet marquee glow (arcade-faithful: marquee light bleeds onto screen)
+function drawCabinetMarquee(t){
+  const pulse = 0.15 + Math.sin(t * 2) * 0.05;
+  // Top edge glow simulating marquee light
+  const grad = ctx.createLinearGradient(0, 0, 0, 60);
+  grad.addColorStop(0, `rgba(255,184,255,${pulse})`);
+  grad.addColorStop(1, 'rgba(255,184,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, 60);
+  // Subtle bottom edge glow (screen bleed)
+  const grad2 = ctx.createLinearGradient(0, canvas.height - 30, 0, canvas.height);
+  grad2.addColorStop(0, 'rgba(255,184,255,0)');
+  grad2.addColorStop(1, `rgba(255,184,255,${pulse * 0.5})`);
+  ctx.fillStyle = grad2;
+  ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+}
+
+// Helper to darken a hex color for ghost house interior
+function darkenColor(hex, amount){
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  const dr = Math.floor(r * (1-amount));
+  const dg = Math.floor(g * (1-amount));
+  const db = Math.floor(b * (1-amount));
+  return `rgb(${dr},${dg},${db})`;
+}
+
+// Helper to darken a hex color string (returns hex)
+function darkenHex(hex, amount){
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  const dr = Math.floor(r * (1-amount));
+  const dg = Math.floor(g * (1-amount));
+  const db = Math.floor(b * (1-amount));
+  return '#' + [dr,dg,db].map(c => c.toString(16).padStart(2,'0')).join('');
+}
+
+// Power pellet color shifts by level (arcade-faithful)
+function getPowerPelletColorForLevel(lv){
+  // Colors cycle through the arcade power pellet palette
+  const colors = ['#ffb897','#ff8040','#ff4080','#8040ff','#4080ff','#40ffb8','#b8ff40','#ffff40'];
+  return colors[(lv-1) % colors.length];
+}
+
+function drawCorridorLines(){
+  // For each wall cell, draw line segments to adjacent wall cells
+  // This creates continuous corridor lines instead of blocky rects
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      if(maze[y][x]!==1) continue;
+      const cx=x*TILE+8, cy=y*TILE+8; // center of cell
+
+      // Check each direction for adjacent walls
+      // Right
+      if(x+1<COLS && maze[y][x+1]===1){
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx+TILE/2, cy);
+        ctx.stroke();
+      }
+      // Down
+      if(y+1<ROWS && maze[y+1][x]===1){
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy+TILE/2);
+        ctx.stroke();
+      }
+      // Left (only draw if current cell is leftmost in run)
+      if(x>0 && maze[y][x-1]!==1){
+        ctx.beginPath();
+        ctx.moveTo(cx-TILE/2, cy);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+      // Up (only draw if current cell is topmost in run)
+      if(y>0 && maze[y-1][x]!==1){
+        ctx.beginPath();
+        ctx.moveTo(cx, cy-TILE/2);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+
+      // Draw a small circle at isolated wall cells (corners/endpoints)
+      const neighbors = 0
+        + (x>0 && maze[y][x-1]===1 ? 1 : 0)
+        + (x+1<COLS && maze[y][x+1]===1 ? 1 : 0)
+        + (y>0 && maze[y-1][x]===1 ? 1 : 0)
+        + (y+1<ROWS && maze[y+1][x]===1 ? 1 : 0);
+      if(neighbors <= 1){
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI*2);
+        ctx.stroke();
+      }
+    }
+  }
+}
+function drawDots(){
+  const t = performance.now()/1000;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    const c=maze[y][x];
+    if(c===2){
+      // Pellet: warm dot with subtle glow and twinkle - reduced shadowBlur for performance
+      const px=x*TILE+8, py=y*TILE+8;
+      const twinkle = 0.7 + Math.sin(t*3+x+y)*0.15;
+      ctx.save();
+      ctx.shadowColor=COLORS.pellet; ctx.shadowBlur=1.5; // reduced from 3 for performance
+      ctx.globalAlpha = twinkle;
+      ctx.fillStyle=COLORS.pellet;
+      ctx.beginPath(); ctx.arc(px,py,2.5,0,Math.PI*2); ctx.fill();
+      // tiny white specular dot
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(255,255,255,0.4)';
+      ctx.beginPath(); ctx.arc(px-0.8,py-0.8,0.8,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    } else if(c===3){
+      // Power pellet: AAA expanding rings + dramatic pulse + arcade flash
+      const px=x*TILE+8, py=y*TILE+8;
+      const pulse = 6+Math.sin(t*4)*3;
+      // Arcade-faithful: power pellet size oscillates (small→large→small rhythm)
+      const sizePulse = 4+Math.sin(t*3)*2;
+      // Arcade-faithful: power pellet flashes/blinks rapidly
+      const flash = Math.floor(t * 6) % 2 === 0;
+
+      // Expanding shockwave rings (3 rings, offset phases)
+      ctx.save();
+      for(let r=0;r<3;r++){
+        const phase = ((t*1.5+r/3)%1);
+        const ringR = sizePulse + phase*20;
+        const alpha = (1-phase)*0.25 * (flash ? 1.0 : 0.3);
+        ctx.strokeStyle=`rgba(255,184,151,${alpha})`;
+        ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(px,py,ringR,0,Math.PI*2); ctx.stroke();
+      }
+      ctx.restore();
+
+      // Main glowing orb with level-based color (arcade: power pellet color shifts by level)
+      ctx.save();
+      const powerColor = getPowerPelletColorForLevel(level);
+
+      // Flash effect: dim during off-cycles
+      if(!flash){
+        ctx.globalAlpha = 0.35;
+      }
+
+      ctx.shadowColor=powerColor; ctx.shadowBlur = flash ? 12 : 5; // reduced from 20/8 for performance
+      const orbGrad = ctx.createRadialGradient(px-2,py-2,1,px,py,sizePulse);
+      orbGrad.addColorStop(0, flash ? '#ffffff' : 'rgba(255,255,255,0.3)');
+      orbGrad.addColorStop(0.4, powerColor);
+      orbGrad.addColorStop(1, darkenHex(powerColor, 0.6));
+      ctx.fillStyle=orbGrad;
+      ctx.beginPath(); ctx.arc(px,py,sizePulse,0,Math.PI*2); ctx.fill();
+
+      // Inner white highlight
+      ctx.shadowBlur=0;
+      if(flash){
+        ctx.fillStyle='rgba(255,255,255,0.7)';
+        ctx.beginPath(); ctx.arc(px-1.5,py-2,sizePulse*0.35,0,Math.PI*2); ctx.fill();
+      }
+
+      // Arcade-faithful: 'P' letter on power pellet (Ms. Pac-Man signature)
+      ctx.fillStyle=flash ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.15)';
+      ctx.font=`bold ${Math.floor(sizePulse*1.2)}px Courier New`;
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('P', px, py+0.5);
+
+      // Outer glow ring
+      ctx.strokeStyle = flash ? 'rgba(255,184,151,.4)' : 'rgba(255,184,151,.05)';
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(px,py,sizePulse+6,0,Math.PI*2); ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+}
+function drawMsPac(){
+  const p=posOf(pacman);
+  // AAA Ms. Pac-Man with enhanced glow, gradient, and detail
+  ctx.save();
+  ctx.translate(p.x,p.y);
+
+  // Animated mouth
+  const rot=[0,-Math.PI/2,Math.PI,Math.PI/2][pacman.dir]||0;
+  ctx.rotate(rot);
+  const mouth=0.15+Math.abs(Math.sin(pacman.anim*0.6))*0.4;
+
+  // Outer golden glow halo - reduced blur for performance
+  ctx.save();
+  ctx.shadowColor='#ffff00';
+  ctx.shadowBlur=8;
+  ctx.fillStyle='rgba(255,255,0,0.1)';
+  ctx.beginPath();
+  ctx.arc(0,0,10,mouth,Math.PI*2-mouth);
+  ctx.lineTo(0,0); ctx.fill();
+  ctx.restore();
+
+  // Main body with gradient
+  ctx.save();
+  const grad = ctx.createRadialGradient(-2,-2,1,0,0,8);
+  grad.addColorStop(0,'#ffff60');
+  grad.addColorStop(0.6,'#ffff00');
+  grad.addColorStop(1,'#e0c000');
+  ctx.shadowColor='#ffff00';
+  ctx.shadowBlur=6; // reduced from 10 for performance
+  ctx.fillStyle=grad;
+  ctx.beginPath();
+  ctx.arc(0,0,8,mouth,Math.PI*2-mouth);
+  ctx.lineTo(0,0); ctx.fill();
+  ctx.restore();
+
+  // Inner highlight (specular)
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,200,0.6)';
+  ctx.beginPath();
+  ctx.arc(-2,-2,3,mouth+0.2,Math.PI*2-mouth-0.4);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.shadowBlur=0;
+
+  // Eyes with expression
+  const eyeOff = mouth > 0.3 ? -4 : -5;
+  ctx.fillStyle='#111';
+  // Left eye (teardrop shape)
+  ctx.beginPath();
+  ctx.ellipse(-2.5,eyeOff,2,2.5,0,0,Math.PI*2);
+  ctx.fill();
+  // Right eye
+  ctx.beginPath();
+  ctx.ellipse(2,eyeOff,2,2.5,0,0,Math.PI*2);
+  ctx.fill();
+
+  // Eye highlights (catchlight)
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-1.8,eyeOff-0.8,1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(2.8,eyeOff-0.8,1,0,Math.PI*2); ctx.fill();
+
+  // Eyelashes with subtle animation
+  const lashAngle = Math.sin(pacman.anim*0.3)*0.1;
+  ctx.strokeStyle='#111'; ctx.lineWidth=1;
+  for(let e=-1;e<=1;e++){
+    const ex = e<0 ? -2.5 : 2;
+    for(let lx=-2;lx<=2;lx+=4){
+      const baseX = ex + lx*0.7;
+      const baseY = eyeOff - 2.2;
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(baseX + (e*0.5 + lashAngle)*3, baseY - 2.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // Bow with enhanced rendering
+  ctx.save();
+  ctx.translate(p.x,p.y);
+
+  // Bow glow - reduced blur for performance
+  ctx.shadowColor='#ff69b4';
+  ctx.shadowBlur=4; // reduced from 8 for performance
+  ctx.fillStyle=COLORS.bow;
+
+  // Left loop (teardrop)
+  ctx.beginPath();
+  ctx.ellipse(-4,-10,3.5,2.8,-0.3,0,Math.PI*2);
+  ctx.fill();
+  // Right loop
+  ctx.beginPath();
+  ctx.ellipse(4,-10,3.5,2.8,0.3,0,Math.PI*2);
+  ctx.fill();
+
+  // Bow highlights
+  ctx.shadowBlur=0;
+  ctx.fillStyle='rgba(255,150,200,0.5)';
+  ctx.beginPath(); ctx.arc(-5,-11,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(3,-11,1.5,0,Math.PI*2); ctx.fill();
+
+  // Center knot (darker pink with 3D effect)
+  const bowGrad = ctx.createRadialGradient(-0.5,-10.5,0.5,0,-10,2);
+  bowGrad.addColorStop(0,'#ff80b0');
+  bowGrad.addColorStop(1,'#c04070');
+  ctx.fillStyle=bowGrad;
+  ctx.beginPath(); ctx.arc(0,-10,2,0,Math.PI*2); ctx.fill();
+
+  // Ribbon tails with bezier curves
+  ctx.strokeStyle=COLORS.bow; ctx.lineWidth=1.5;
+  const tailWave = Math.sin(performance.now()/300)*0.3;
+  ctx.beginPath(); ctx.moveTo(-1,-8); ctx.quadraticCurveTo(-3+tailWave,-5,-2,-3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(1,-8); ctx.quadraticCurveTo(3-tailWave,-5,2,-3); ctx.stroke();
+
+  // Mole on right cheek
+  ctx.fillStyle='#ff80c0';
+  ctx.beginPath(); ctx.arc(4.5,2,1.3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,100,150,0.4)';
+  ctx.beginPath(); ctx.arc(4.5,2,1.8,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+function drawGhost(g){
+  const p = g.inHouse ? {x:g.col*TILE+8, y:g.row*TILE+8} : posOf(g);
+  if(g.eaten){
+    // Eyes returning home — detailed eye sockets with tracking pupils
+    const ed = pacman ? (() => {
+      const dx=pacman.col*TILE+8-p.x, dy=pacman.row*TILE+8-p.y;
+      const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+      return [dx/d, dy/d];
+    })() : DIRS[g.dir];
+    // Left eye socket
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.ellipse(p.x-3.5,p.y-1,3.5,4,0,0,Math.PI*2); ctx.fill();
+    // Right eye socket
+    ctx.beginPath(); ctx.ellipse(p.x+3.5,p.y-1,3.5,4,0,0,Math.PI*2); ctx.fill();
+    // Pupils tracking toward ghost house
+    ctx.fillStyle='#2121de';
+    ctx.beginPath(); ctx.arc(p.x-3.5+ed[0]*1.5,p.y-1+ed[1]*1.5,1.8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+3.5+ed[0]*1.5,p.y-1+ed[1]*1.5,1.8,0,Math.PI*2); ctx.fill();
+    // Pupil highlights
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(p.x-3.5+ed[0]*1.5-0.5,p.y-1+ed[1]*1.5-0.5,0.6,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+3.5+ed[0]*1.5-0.5,p.y-1+ed[1]*1.5-0.5,0.6,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  const scared = powerTimer>0 && !g.eaten;
+  const flash = scared && powerTimer<2 && Math.floor(powerTimer*6)%2===0;
+  const bodyColor = scared ? (flash?'#fff':COLORS.scared) : g.color;
+
+  // Ghost movement trail (faint afterimage)
+  ctx.save();
+  const trailAlpha = scared ? 0.05 : 0.12;
+  ctx.globalAlpha = trailAlpha;
+  ctx.fillStyle = bodyColor;
+  ctx.shadowBlur = 0;
+  const trailOffX = (g.dir===0?1:g.dir===2?-1:0)*2;
+  const trailOffY = (g.dir===1?-1:g.dir===3?1:0)*2;
+  ctx.beginPath();
+  ctx.arc(p.x+trailOffX, p.y+trailOffY-2, 8, Math.PI, 0);
+  ctx.lineTo(p.x+trailOffX+8, p.y+trailOffY+6);
+  const wAmp = 2.5;
+  for(let i=0;i<3;i++){
+    const xS = p.x+trailOffX+8-i*(16/3);
+    const xE = xS-16/3;
+    const cpY = (i%2===0) ? p.y+trailOffY+6-wAmp : p.y+trailOffY+6+wAmp;
+    ctx.quadraticCurveTo(xS-8/3, cpY, xE, p.y+trailOffY+6);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Ghost body with AAA glow and gradient
+  ctx.save();
+  const bodyGrad = ctx.createLinearGradient(p.x-8,p.y-10,p.x+8,p.y+6);
+  if(scared){
+    bodyGrad.addColorStop(0, flash?'#ffffff':'#5050ff');
+    bodyGrad.addColorStop(1, flash?'#ffffff':'#2020dd');
+  } else {
+    bodyGrad.addColorStop(0, g.color);
+    bodyGrad.addColorStop(1, g.darken ? g.darken : g.color);
+  }
+  ctx.shadowColor = bodyColor;
+  ctx.shadowBlur = scared ? 4 : 6; // reduced from 8/12 for performance
+  ctx.fillStyle = bodyGrad;
+
+  // Dome head (smooth semicircle)
+  ctx.beginPath();
+  ctx.arc(p.x, p.y-2, 8, Math.PI, 0);
+  // Straight sides down to wavy bottom
+  ctx.lineTo(p.x+8, p.y+6);
+  // 3-segment wavy bottom (arcade faithful)
+  const waveAmp = 2.5;
+  for(let i=0;i<3;i++){
+    const xStart = p.x+8-i*(16/3);
+    const xEnd = xStart-16/3;
+    const cpY = (i%2===0) ? p.y+6-waveAmp : p.y+6+waveAmp;
+    ctx.quadraticCurveTo(xStart-8/3, cpY, xEnd, p.y+6);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Body outline for definition
+  ctx.strokeStyle = scared ? 'rgba(100,100,255,0.3)' : 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Eye sockets (white, oval) with subtle shadow
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = 'rgba(0,0,0,0.2)';
+  ctx.shadowBlur = 1;
+  ctx.beginPath(); ctx.ellipse(p.x-3.5,p.y-2,3,3.5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(p.x+3.5,p.y-2,3,3.5,0,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Pupils - scared ghosts have no pupils, show mouth instead
+  if(!scared){
+    let pupilColor = '#2121de';
+    let ed = DIRS[g.dir];
+    // Track movement direction more precisely
+    const dx=p.x+ed[0]*10-(p.x), dy=p.y+ed[1]*10-(p.y);
+    const d=Math.max(1,Math.sqrt(dx*dx+dy*dy));
+    ed=[dx/d, dy/d];
+    ctx.fillStyle=pupilColor;
+    ctx.beginPath(); ctx.arc(p.x-3.5+ed[0]*1.3,p.y-2+ed[1]*1.3,1.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+3.5+ed[0]*1.3,p.y-2+ed[1]*1.3,1.5,0,Math.PI*2); ctx.fill();
+    // Pupil highlights
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(p.x-3.5+ed[0]*1.3-0.4,p.y-2+ed[1]*1.3-0.4,0.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+3.5+ed[0]*1.3-0.4,p.y-2+ed[1]*1.3-0.4,0.5,0,Math.PI*2); ctx.fill();
+  } else {
+    // Scared ghost: no pupils, show scared expression
+    ctx.fillStyle='#ffb8ff';
+    ctx.beginPath(); ctx.arc(p.x-3.5,p.y-2,1.8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x+3.5,p.y-2,1.8,0,Math.PI*2); ctx.fill();
+  }
+
+  // Frightened face details
+  if(scared && !flash){
+    // Zigzag mouth
+    ctx.strokeStyle='#ffb8ff'; ctx.lineWidth=1.2;
+    ctx.beginPath();
+    const my = p.y+3;
+    ctx.moveTo(p.x-5,my);
+    ctx.lineTo(p.x-3,my+2);
+    ctx.lineTo(p.x-1,my);
+    ctx.lineTo(p.x+1,my+2);
+    ctx.lineTo(p.x+3,my);
+    ctx.lineTo(p.x+5,my+2);
+    ctx.stroke();
+  } else if(!scared){
+    // Normal ghost mouth (subtle line)
+    ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(p.x-4,p.y+3);
+    ctx.lineTo(p.x+4,p.y+3);
+    ctx.stroke();
+  }
+
+  // Ghost-specific highlight on dome (top shine)
+  if(!scared){
+    ctx.fillStyle='rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y-6, 5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+function drawFruit(){
+  if(!fruit||!fruit.active) return;
+  const p=posOf(fruit);
+  const t=performance.now()/1000;
+  // Subtle bob animation
+  const bob=Math.sin(t*3)*2;
+
+  // Arcade-faithful: blink rapidly when about to disappear
+  let alpha = 1.0;
+  if(fruit.blink){
+    // Rapid blink (4x per second)
+    alpha = Math.sin(t * 16) > 0 ? 1.0 : 0.2;
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Shadow beneath fruit
+  ctx.fillStyle='rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(p.x,p.y+8,5,2,0,0,Math.PI*2); ctx.fill();
+
+  // Glow - reduced blur for performance
+  ctx.shadowColor=fruit.color; ctx.shadowBlur=4; // reduced from 8 for performance
+
+  // Stem + leaf (drawn first, behind fruit)
+  ctx.fillStyle='#0a0';
+  ctx.fillRect(p.x-1,p.y-9+bob,2,4);
+  ctx.fillStyle='#0d0';
+  ctx.beginPath(); ctx.ellipse(p.x+3,p.y-8+bob,3,2,0.3,0,Math.PI*2); ctx.fill();
+
+  // Fruit body with gradient-like highlight
+  ctx.fillStyle=fruit.color;
+  ctx.beginPath(); ctx.arc(p.x,p.y+bob,7,0,Math.PI*2); ctx.fill();
+
+  ctx.shadowBlur=0;
+  // Highlight (top-left shine)
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.beginPath(); ctx.arc(p.x-2.5,p.y-2.5+bob,2.5,0,Math.PI*2); ctx.fill();
+
+  // Outline
+  ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(p.x,p.y+bob,7,0,Math.PI*2); ctx.stroke();
+
+  // Fruit name label below
+  ctx.fillStyle='#fff';
+  ctx.font='bold 9px Courier New';
+  ctx.textAlign='center';
+  ctx.fillText(fruit.name, p.x, p.y+18+bob);
+
+  ctx.restore();
+}
+function drawIntermission(){
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  const t=intermission.t;
+  const act=intermission.act;
+
+  // Title with glow
+  ctx.save();
+  ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=12;
+  ctx.fillStyle=COLORS.text;
+  ctx.font='bold 20px Courier New';
+  ctx.textAlign='center';
+  const titles=['','THEY MEET','THE CHASE','JUNIOR'];
+  ctx.fillText(titles[act]||'INTERMISSION', canvas.width/2, 50);
+  ctx.shadowBlur=0;
+
+  // Level number in gold
+  ctx.fillStyle='#ff0';
+  ctx.font='bold 24px Courier New';
+  ctx.fillText(`LEVEL ${level}`, canvas.width/2, 85);
+  ctx.restore();
+
+  // Animated cutscene figures with improved rendering
+  const baseY = 280;
+  if(act===1){
+    // Ms Pac chased by Pac from left, meet center
+    const x1 = -40 + t*90;
+    const x2 = canvas.width+40 - t*90;
+    drawSpritePac(x1, baseY, 0, true);
+    drawSpritePac(x2, baseY, 2, false);
+    if(t>3.2){
+      ctx.save();
+      ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=6;
+      ctx.fillStyle='#ffb8ff';
+      ctx.font='14px Courier New';
+      ctx.fillText('MS. PAC-MAN  &  PAC-MAN', canvas.width/2, baseY+50);
+      ctx.restore();
+    }
+  } else if(act===2){
+    const x = (t*120) % (canvas.width+80) - 40;
+    drawSpritePac(x, baseY-20, 0, true);
+    drawSpriteGhost(x-40, baseY-20, COLORS.blinky);
+    drawSpritePac(canvas.width-x, baseY+40, 2, false);
+    drawSpriteGhost(canvas.width-x+40, baseY+40, COLORS.pinky);
+  } else {
+    // junior
+    const x = 80 + Math.sin(t)*20 + t*40;
+    drawSpritePac(x, baseY, 0, true);
+    drawSpritePac(x+50, baseY, 0, false);
+    // baby with bow
+    ctx.save();
+    ctx.shadowColor=COLORS.pac; ctx.shadowBlur=4;
+    ctx.fillStyle=COLORS.pac;
+    ctx.beginPath(); ctx.arc(x+25, baseY+30, 5, 0.2, Math.PI*2-0.2); ctx.lineTo(x+25, baseY+30); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=COLORS.bow;
+    ctx.beginPath(); ctx.arc(x+23, baseY+24, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Skip prompt with pulse
+  const skipAlpha = 0.5+Math.sin(t*4)*0.3;
+  ctx.fillStyle=`rgba(136,136,136,${skipAlpha})`;
+  ctx.font='12px Courier New';
+  ctx.fillText('TAP TO SKIP', canvas.width/2, canvas.height-24);
+}
+function drawSpritePac(x,y,dir,isMs){
+  ctx.save(); ctx.translate(x,y);
+  const rot=[0,-Math.PI/2,Math.PI,Math.PI/2][dir]||0; ctx.rotate(rot);
+  ctx.fillStyle=COLORS.pac;
+  ctx.beginPath(); ctx.arc(0,0,10,0.35,Math.PI*2-0.35); ctx.lineTo(0,0); ctx.fill();
+  ctx.restore();
+  if(isMs){
+    ctx.fillStyle=COLORS.bow;
+    ctx.beginPath(); ctx.arc(x-3,y-12,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+3,y-12,3,0,Math.PI*2); ctx.fill();
+  }
+}
+function drawSpriteGhost(x,y,col){
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x,y-2,10,Math.PI,0); ctx.lineTo(x+10,y+10); ctx.lineTo(x-10,y+10); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.fillRect(x-5,y-4,4,4); ctx.fillRect(x+2,y-4,4,4);
+}
+
+function roundRect(ctx, x, y, w, h){
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 4);
+  ctx.fill();
+}
+
+function panel(title, lines=[], borderColor='#ffb8ff'){
+  ctx.fillStyle='rgba(0,0,0,.88)';
+  roundRect(ctx, 24, 190, 400, 180);
+  ctx.strokeStyle=borderColor; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(24, 190, 400, 180, 4); ctx.stroke();
+  // Title glow
+  ctx.shadowColor=borderColor; ctx.shadowBlur=8;
+  ctx.fillStyle='#fff'; ctx.textAlign='center';
+  ctx.font='bold 20px Courier New'; ctx.fillText(title, canvas.width/2, 235);
+  ctx.shadowBlur=0;
+  ctx.font='bold 14px Courier New';
+  lines.forEach((l,i)=>ctx.fillText(l, canvas.width/2, 265+i*24));
+}
+
+function panelTitleScreen(){
+  ctx.fillStyle='rgba(0,0,0,.85)';
+  roundRect(ctx, 20, 180, 408, 200);
+  ctx.strokeStyle='#ffb8ff'; ctx.lineWidth=2;
+  ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.roundRect(20, 180, 408, 200, 6); ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // MS. PAC-MAN title with AAA glow and text shadow
+  const t = performance.now()/1000;
+  const titleGlow = 15+Math.sin(t*2)*5;
+  ctx.save();
+  ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=titleGlow;
+  // Text outline for depth
+  ctx.strokeStyle='rgba(200,100,200,.3)'; ctx.lineWidth=3;
+  ctx.font='bold 28px Courier New'; ctx.textAlign='center';
+  ctx.strokeText('MS. PAC-MAN', canvas.width/2, 225);
+  ctx.fillStyle='#ffb8ff';
+  ctx.fillText('MS. PAC-MAN', canvas.width/2, 225);
+  ctx.shadowBlur=0;
+  ctx.restore();
+
+  // Version with subtle glow
+  ctx.fillStyle='#aaa'; ctx.font='bold 11px Courier New';
+  ctx.fillText(`v${GAME_VERSION} — AAA Edition`, canvas.width/2, 248);
+
+  // Instructions with bullet points
+  ctx.fillStyle='#dedeff'; ctx.font='bold 13px Courier New';
+  ctx.fillText('← ↑ → ↓ or D-pad to move', canvas.width/2, 280);
+  ctx.fillText('Eat all dots to advance', canvas.width/2, 300);
+  ctx.fillText('Power pellets let you eat ghosts!', canvas.width/2, 320);
+
+  // High score display with glow (show top 5 scores)
+  if(highScores.length > 0){
+    ctx.fillStyle='#ff0'; ctx.font='bold 10px Courier New';
+    ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
+    for(let i=0;i<Math.min(3,highScores.length);i++){
+      const label = i===0?'1.' : (i===1?'2.' : '3.');
+      ctx.fillText(`${label} ${String(highScores[i]).padStart(6,'0')}`, canvas.width/2, 355+i*14);
+    }
+    ctx.shadowBlur=0;
+  } else if(high > 0){
+    ctx.fillStyle='#ff0'; ctx.font='bold 12px Courier New';
+    ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
+    ctx.fillText(`HIGH SCORE: ${String(high).padStart(6,'0')}`, canvas.width/2, 355);
+    ctx.shadowBlur=0;
+  }
+
+  // Pulsing "TAP TO START"
+  const tapAlpha = 0.4+Math.sin(t*3)*0.3;
+  ctx.fillStyle=`rgba(255,184,255,${tapAlpha})`;
+  ctx.font='bold 14px Courier New';
+  ctx.fillText('TAP TO START', canvas.width/2, 370);
+}
+
+function draw(){
+  if(gameState==='intermission'){ drawIntermission(); return; }
+
+  ctx.save();
+  // screen shake offset
+  ctx.translate(shakeX, shakeY);
+
+  // Cabinet marquee glow (simulates arcade cabinet light bleeding onto screen)
+  const t = performance.now()/1000;
+  drawCabinetMarquee(t);
+
+  ctx.fillStyle='#000'; ctx.fillRect(-10,-10,canvas.width+20,canvas.height+20);
+  drawWalls();
+  // tunnel wrap flash at edges
+  if(tunnelFlash>0){
+    const alpha=Math.min(1,tunnelFlash*4);
+    ctx.fillStyle=`rgba(255,255,255,${alpha*0.4})`;
+    ctx.fillRect(0,TUNNEL_ROW*TILE,8,TILE);
+    ctx.fillRect((COLS-1)*TILE,TUNNEL_ROW*TILE,8,TILE);
+  }
+  // tunnel row darker background
+  ctx.fillStyle='rgba(0,0,20,0.3)';
+  ctx.fillRect(0,TUNNEL_ROW*TILE,canvas.width,TILE);
+  drawDots();
+  drawFruit();
+  // score popups (floating text at eaten fruit) - rise animation
+  for(const p of scorePopups){
+    const alpha = Math.max(0, Math.min(1, p.t * 2));
+    const rise = (1 - p.t) * 20; // rises 20px over lifetime
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color || '#ffff00';
+    ctx.font='bold 12px Courier New';
+    ctx.textAlign='center';
+    ctx.fillText(p.text, p.x, p.y - rise);
+    ctx.restore();
+  }
+  // particles (ghost eat bursts, etc.) - optimized: no shadowBlur per particle
+  for(const p of particles){
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI*2);
+    ctx.fill();
+  }
+  if(gameState!=='death'){ drawMsPac(); }
+  else if(deathT > 0.5){
+    // Death animation: mouth opens wide, then eyes look up
+    const px = pacman.x, py = pacman.y;
+    ctx.fillStyle='#ffff00';
+    ctx.beginPath();
+    ctx.arc(px, py, TILE/2-2, 0.3*Math.PI, 1.7*Math.PI);
+    ctx.lineTo(px, py);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(px-4, py-5, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px+4, py-5, 2.5, 0, Math.PI*2); ctx.fill();
+  }
+  ghosts.forEach(drawGhost);
+
+  // HUD — AAA neon glow with polished panels
+  ctx.save();
+  const hudY = 2;
+  const hudH = 34;
+
+  // Score panel (left) with neon border - reduced blur for performance
+  ctx.fillStyle='rgba(0,0,10,.85)';
+  roundRect(ctx, 4, hudY, 140, hudH);
+  ctx.shadowColor='#2121de'; ctx.shadowBlur=3; // reduced from 6
+  ctx.strokeStyle='rgba(33,33,222,.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(4, hudY, 140, hudH, 3); ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='left';
+  ctx.fillText('SCORE', 10, 13);
+  ctx.fillStyle=scoreFlash>0?'#fff':'#eef';
+  ctx.shadowColor='#4040ff'; ctx.shadowBlur=scoreFlash>0?6:2; // reduced from 10/4
+  ctx.font='bold 16px Courier New';
+  ctx.fillText(String(score).padStart(6,'0'), 10, 29);
+  ctx.shadowBlur=0;
+
+  // High score panel (center) with gold glow - reduced blur for performance
+  ctx.fillStyle='rgba(0,0,10,.85)';
+  roundRect(ctx, 152, hudY, 144, hudH);
+  ctx.shadowColor='#ff0'; ctx.shadowBlur=3; // reduced from 5
+  ctx.strokeStyle='rgba(255,255,0,.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(152, hudY, 144, hudH, 3); ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+  ctx.fillText('HIGH SCORE', 224, 13);
+  ctx.fillStyle='#ff0';
+  ctx.shadowColor='#ff0'; ctx.shadowBlur=3; // reduced from 6
+  ctx.font='bold 16px Courier New';
+  ctx.fillText(String(high).padStart(6,'0'), 224, 29);
+  ctx.shadowBlur=0;
+
+  // Level panel (right) with green glow - reduced blur for performance
+  ctx.fillStyle='rgba(0,0,10,.85)';
+  roundRect(ctx, 300, hudY, 144, hudH);
+  ctx.shadowColor='#0f0'; ctx.shadowBlur=3; // reduced from 5
+  ctx.strokeStyle='rgba(0,255,0,.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(300, hudY, 144, hudH, 3); ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#888'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+  ctx.fillText('LEVEL', 372, 13);
+  ctx.fillStyle='#0f0';
+  ctx.shadowColor='#0f0'; ctx.shadowBlur=3; // reduced from 6
+  ctx.font='bold 16px Courier New';
+  ctx.fillText(String(level), 372, 29);
+  ctx.shadowBlur=0;
+
+  // Power timer bar (visible during power pellet)
+  if(powerTimer > 0){
+    const barW = 80;
+    const barH = 4;
+    const barX = canvas.width/2 - barW/2;
+    const barY = hudY + hudH + 4;
+    ctx.fillStyle='rgba(0,0,10,.6)';
+    roundRect(ctx, barX-1, barY-1, barW+2, barH+2);
+    const fill = powerTimer / Math.max(4, 9-(level-1)*0.7);
+    const barColor = powerTimer < 2 ? (Math.floor(powerTimer*6)%2===0?'#fff':'#ff4444') : '#2121ff';
+    ctx.fillStyle=barColor;
+    ctx.shadowColor=barColor; ctx.shadowBlur=6;
+    roundRect(ctx, barX, barY, barW*fill, barH);
+    ctx.shadowBlur=0;
+  }
+
+  ctx.restore();
+
+  // Lives as small Ms. Pac-Man sprites at bottom-left
+  for(let i=0;i<lives;i++){
+    const lx = 20+i*20, ly = canvas.height-12;
+    ctx.fillStyle=COLORS.pac;
+    ctx.beginPath(); ctx.arc(lx, ly, 5, 0.35, Math.PI*2-0.35); ctx.lineTo(lx, ly); ctx.fill();
+    // tiny bow
+    ctx.fillStyle=COLORS.bow;
+    ctx.beginPath(); ctx.arc(lx-1.5, ly-6, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(lx+1.5, ly-6, 1.5, 0, Math.PI*2); ctx.fill();
+  }
+
+  if(gameState==='title'){
+    // AAA title screen with gradient background and animated elements
+    const t = performance.now() / 1000;
+
+    // Background gradient (deep blue-to-black with subtle animation)
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bgGrad.addColorStop(0, '#050520');
+    bgGrad.addColorStop(0.5, '#0a0a30');
+    bgGrad.addColorStop(1, '#000010');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Animated starfield (subtle dots)
+    ctx.fillStyle = 'rgba(200,200,255,0.3)';
+    for(let i=0;i<40;i++){
+      const sx = ((i*137+t*5*(1+i%3*0.5)) % canvas.width);
+      const sy = ((i*97+Math.sin(t*0.3+i)*10) % canvas.height);
+      const ss = 0.5+Math.sin(t*2+i)*0.5;
+      ctx.beginPath(); ctx.arc(sx,sy,ss,0,Math.PI*2); ctx.fill();
+    }
+
+    // Animated attract: Ms. Pac-Man chasing ghost with AAA glow
+    const ax = ((t * 50) % (canvas.width + 100)) - 50;
+    const ay = canvas.height / 2 + 60;
+
+    // Ms. Pac-Man chasing (AAA enhanced)
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(0);
+    ctx.shadowColor='#ffff00'; ctx.shadowBlur=12;
+    const am = 0.1 + Math.abs(Math.sin(t * 8)) * 0.45;
+    const pacGrad = ctx.createRadialGradient(-2,-2,1,0,0,8);
+    pacGrad.addColorStop(0,'#ffff60'); pacGrad.addColorStop(0.6,'#ffff00'); pacGrad.addColorStop(1,'#e0c000');
+    ctx.fillStyle=pacGrad;
+    ctx.beginPath(); ctx.arc(0, 0, 8, am, Math.PI * 2 - am); ctx.lineTo(0, 0); ctx.fill();
+    ctx.shadowBlur=0;
+    // bow
+    ctx.fillStyle=COLORS.bow;
+    ctx.beginPath(); ctx.arc(-3,-9,2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,-9,2.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // Ghost being chased (AAA enhanced with gradient)
+    const gx = ax + 35;
+    ctx.save();
+    ctx.shadowColor=COLORS.blinky; ctx.shadowBlur=10;
+    const ghostGrad = ctx.createLinearGradient(gx-8,ay-10,gx+8,ay+6);
+    ghostGrad.addColorStop(0,'#ff2020'); ghostGrad.addColorStop(1,'#cc0000');
+    ctx.fillStyle = ghostGrad;
+    ctx.beginPath(); ctx.arc(gx, ay-1, 8, Math.PI, 0);
+    ctx.lineTo(gx+8, ay+6);
+    for(let wi=0;wi<3;wi++){
+      const ws=gx+8-wi*(16/3), we=ws-16/3;
+      ctx.quadraticCurveTo(ws-8/3, (wi%2===0)?ay+3:ay+9, we, ay+6);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur=0;
+    // Ghost eyes looking back in fear
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.ellipse(gx-3, ay-2, 2.5, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(gx+3, ay-2, 2.5, 3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2121de';
+    ctx.beginPath(); ctx.arc(gx-4.5, ay-2, 1.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(gx+1.5, ay-2, 1.2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // Title panel with AAA styling
+    if(titlePrompt==='resume') panel('READY!', ['Tap to continue'], '#ffb8ff');
+    else panelTitleScreen();
+  }
+
+  if(gameState==='ready'){
+    // READY! flashing in center of maze (arcade style)
+    const flash = Math.floor(performance.now()/300)%2===0;
+    if(flash){
+      ctx.fillStyle='#ffb8ff';
+      ctx.font='bold 24px Courier New';
+      ctx.textAlign='center';
+      ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=12;
+      ctx.fillText('READY!', canvas.width/2, canvas.height/2+8);
+      ctx.shadowBlur=0;
+    }
+  }
+
+  if(gameState==='gameover'){
+    const isNewHigh = score >= high && score > 0;
+    updateHighScore(score); // Save to high score table
+    panel('GAME OVER', [
+      `SCORE ${String(score).padStart(6,'0')}`,
+      `HIGH  ${String(high).padStart(6,'0')}${isNewHigh ? ' ★ NEW!' : ''}`,
+      `LEVEL ${level}`,
+      'Tap to play again'
+    ], '#ff4444');
+  }
+  if(gameState==='death' && deathT>0.2){
+    // death handled by flashing pac
+  }
+
+  ctx.restore(); // screen shake transform
+}
+
+function loop(ts){
+  if(!lastFrameTime) lastFrameTime=ts;
+  const dt=Math.min(0.05,(ts-lastFrameTime)/1000);
+  lastFrameTime=ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  if(gameState==='intermission'){ // skip
+    intermission=null; nextLevel(); return;
+  }
+  if(gameState==='gameover'){
+    score=0; lives=3; level=1; extraLife=false;
+    createMaze(); resetActors();
+    gameState='ready'; readyTimer=2.5;
+    safeSfx('start'); return;
+  }
+  if(gameState!=='playing'){
+    gameState='ready'; readyTimer=2.5;
+    safeSfx('start'); return;
+  }
+}
+function setDirection(dir){
+  startGame();
+  if(pacman) pacman.nextDir=dir;
+}
+
+function boot(){
+  createMaze();
+  resetActors();
+  statusEl.textContent=`MS. PAC-MAN v${GAME_VERSION} • arcade-style build`;
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e=>{
+  const map={ArrowRight:0,ArrowUp:1,ArrowLeft:2,ArrowDown:3};
+  if(map[e.key]!==undefined){
+    e.preventDefault();
+    unlockAudio().then(()=>setDirection(map[e.key]));
+  }
+  if(e.key===' '||e.key==='Enter'){
+    unlockAudio().then(()=>startGame());
+  }
+});
+canvas.addEventListener('pointerdown', ()=>unlockAudio().then(()=>startGame()));
+document.getElementById('controls').addEventListener('pointerdown', e=>{
+  const btn=e.target.closest('button[data-dir]');
+  if(!btn) return;
+  e.preventDefault();
+  unlockAudio().then(()=>setDirection(Number(btn.dataset.dir)));
+});
+// freeze zoom-ish defaults
+document.addEventListener('gesturestart', e=>e.preventDefault(), {passive:false});
+
+boot();
+})();
+</script>
+</body>
+</html>

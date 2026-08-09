@@ -138,6 +138,7 @@ function createMaze(){
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
   ].map(row => row.slice());
   ROWS = maze.length;
+  // Cache pellet count instead of scanning maze every time
   totalPellets = 0;
   for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) if(maze[y][x]===2||maze[y][x]===3) totalPellets++;
   pelletsEaten = 0;
@@ -377,9 +378,9 @@ function handlePellet(){
   if(c===2){
     maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; sfx('waka'); scoreFlash=0.15; checkExtra();
     // Fruit triggers at ~64 dots and when 66 remain (arcade-faithful)
-    const totalDots = maze.flat().filter(c => c === 2 || c === 3).length;
     if(pelletsEaten===64) spawnFruit();
-    if(totalDots - pelletsEaten === 66 && !fruit) spawnFruit();
+    // remainingPellets = totalPellets - pelletsEaten (cached, no maze scan)
+    if(totalPellets - pelletsEaten === 66 && !fruit) spawnFruit();
     // Particle burst on pellet eat (tiny golden sparkles)
     const pp=posOf(pacman);
     for(let i=0;i<4;i++){
@@ -609,31 +610,14 @@ function update(dt){
     p.y -= 20*dt; // float up
     if(p.t<=0) scorePopups.splice(i,1);
   }
-  // update particles - AAA enhanced
+  // update particles (logic only — drawing stays in draw() to avoid canvas slowdown)
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
     p.life -= dt;
     p.x += p.vx*dt;
     p.y += p.vy*dt;
     p.vy += 80*dt; // gravity
-    if(p.life<=0){ particles.splice(i,1); continue; }
-    const alpha = p.life / p.maxLife;
-    // Trail particle with glow and fade-out trail
-    ctx.save();
-    ctx.globalAlpha = alpha * 0.6;
-    ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
-    ctx.shadowBlur = 8 * alpha;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * (0.5 + alpha * 0.5), 0, Math.PI*2);
-    ctx.fill();
-    // Bright core
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle='#fff';
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * alpha * 0.3, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+    if(p.life<=0){ particles.splice(i,1); }
   }
   collide();
   updateSiren(gameState, powerTimer, pelletsEaten, totalPellets);

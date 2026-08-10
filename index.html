@@ -161,6 +161,7 @@ function posOf(a){
 }
 function cellWalkable(x,y,forGhost){
   if(y<0||y>=ROWS||x<0||x>=COLS) return false;
+  if(!maze[y]) return false;
   const c=maze[y][x];
   if(c===1) return false;
   if(c===4) return !!forGhost; // gate: ghosts only

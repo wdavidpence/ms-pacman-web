@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v3.0 AAA Edition</title>
+<title>MS. PAC-MAN v3.1 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v3.0 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v3.1 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -46,7 +46,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '3.0';
+const GAME_VERSION = '3.1';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -75,6 +75,8 @@ let maze=[], totalPellets=0, pelletsEaten=0, powerTimer=0, ghostCombo=0;
 let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, deathT=0;
 let scorePopups=[]; // {x,y,text,t,color}
 let particles=[]; // {x,y,vx,vy,life,maxLife,color,size}
+const MAX_PARTICLES = 80;
+const MAX_POPUPS = 10;
 let scheduleIndex=0, scheduleTimer=0;
 let intermission=null; // {act, t, dur}
 let readyTimer=0; // countdown before gameplay
@@ -311,6 +313,7 @@ function updateFruit(dt){
     safeSfx('fruit');
     // spawn floating score popup at fruit position with name (gold)
     scorePopups.push({x:fp.x, y:fp.y-8, text:`${fruit.name} ${fruit.pts}`, t:1.0, color:'#ffcc00'});
+    if(scorePopups.length > MAX_POPUPS) scorePopups.splice(0, scorePopups.length - MAX_POPUPS); // cap score popups to prevent freeze
     fruit=null;
     checkExtra();
     return;
@@ -403,6 +406,7 @@ function handlePellet(){
       const speed=15+Math.random()*25;
       particles.push({x:pp.x,y:pp.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:0.35,maxLife:0.35,color:'#ffb897',size:1.5+Math.random()*1});
     }
+    if(particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES); // cap particles to prevent freeze
   } else if(c===3){
     maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++; scoreFlash=0.2;
     powerTimer = Math.max(4, 9 - (level-1)*0.7);
@@ -422,12 +426,14 @@ function handlePellet(){
     tunnelFlash=0.5; // brief screen flash on level clear
     // Show bonus popup
     scorePopups.push({x:canvas.width/2, y:canvas.height/2-40, text:`+${bonus}`, t:2.0, color:'#ff0'});
+    if(scorePopups.length > MAX_POPUPS) scorePopups.splice(0, scorePopups.length - MAX_POPUPS); // cap score popups to prevent freeze
     // Bonus particle burst on level clear
     for(let i=0;i<30;i++){
       const angle=Math.random()*Math.PI*2;
       const speed=60+Math.random()*120;
       particles.push({x:canvas.width/2,y:canvas.height/2,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-40,life:1.2,maxLife:1.2,color:'#ffff00',size:3+Math.random()*3});
     }
+    if(particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES); // cap particles to prevent freeze
     startIntermissionOrNext();
   }
 }
@@ -582,12 +588,14 @@ function collide(){
       // floating score popup at ghost position (white)
       const gp = posOf(g);
       scorePopups.push({x:gp.x, y:gp.y-8, text:`${pts}`, t:1.0, color:'#fff'});
+      if(scorePopups.length > MAX_POPUPS) scorePopups.splice(0, scorePopups.length - MAX_POPUPS); // cap score popups to prevent freeze
       // Spawn particle burst at ghost position
       for(let pi=0;pi<12;pi++){
         const angle=Math.random()*Math.PI*2;
         const speed=30+Math.random()*60;
         particles.push({x:gp.x,y:gp.y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:0.6,maxLife:0.6,color:g.eaten?'#fff':g.color,size:2+Math.random()*2});
       }
+      if(particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES); // cap particles to prevent freeze
       g.eaten=true; safeSfx('ghost'); checkExtra();
       return;
     }
@@ -666,22 +674,20 @@ function update(dt){
   // update score popups
   for(let i=scorePopups.length-1;i>=0;i--){
     const p=scorePopups[i];
-    if(!isFinite(p.t)) { scorePopups.splice(i,1); continue; }
     p.t -= dt;
+    if(!isFinite(p.t) || p.t<=0) { scorePopups.splice(i,1); continue; }
     if(!isFinite(p.y)) { scorePopups.splice(i,1); continue; }
     p.y -= 20*dt; // float up
-    if(p.t<=0) scorePopups.splice(i,1);
   }
   // update particles (logic only — drawing stays in draw() to avoid canvas slowdown)
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
-    if(!isFinite(p.life)) { particles.splice(i,1); continue; }
     p.life -= dt;
+    if(!isFinite(p.life) || p.life<=0){ particles.splice(i,1); continue; }
     if(!isFinite(p.x) || !isFinite(p.y)) { particles.splice(i,1); continue; }
     p.x += p.vx*dt;
     p.y += p.vy*dt;
     p.vy += 80*dt; // gravity
-    if(p.life<=0){ particles.splice(i,1); }
   }
   collide();
   safeUpdateSiren(gameState, powerTimer, pelletsEaten, totalPellets);
@@ -1401,10 +1407,10 @@ function panel(title, lines=[], borderColor='#ffb8ff'){
 
 function panelTitleScreen(){
   ctx.fillStyle='rgba(0,0,0,.85)';
-  roundRect(ctx, 20, 180, 408, 200);
+  roundRect(ctx, 20, 180, 408, 230);
   ctx.strokeStyle='#ffb8ff'; ctx.lineWidth=2;
   ctx.shadowColor='#ffb8ff'; ctx.shadowBlur=10;
-  ctx.beginPath(); ctx.roundRect(20, 180, 408, 200, 6); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(20, 180, 408, 230, 6); ctx.stroke();
   ctx.shadowBlur=0;
 
   // MS. PAC-MAN title with AAA glow and text shadow
@@ -1425,25 +1431,26 @@ function panelTitleScreen(){
   ctx.fillStyle='#aaa'; ctx.font='bold 11px Courier New';
   ctx.fillText(`v${GAME_VERSION} — AAA Edition`, canvas.width/2, 248);
 
-  // Instructions with bullet points
+  // Instructions with bullet points — tighter line spacing
   ctx.fillStyle='#dedeff'; ctx.font='bold 13px Courier New';
-  ctx.fillText('← ↑ → ↓ or D-pad to move', canvas.width/2, 280);
-  ctx.fillText('Eat all dots to advance', canvas.width/2, 300);
-  ctx.fillText('Power pellets let you eat ghosts!', canvas.width/2, 320);
+  ctx.fillText('← ↑ → ↓ or D-pad to move', canvas.width/2, 270);
+  ctx.fillText('Eat all dots to advance', canvas.width/2, 286);
+  ctx.fillText('Power pellets let you eat', canvas.width/2, 302);
+  ctx.fillText('ghosts!', canvas.width/2, 318);
 
-  // High score display with glow (show top 5 scores)
+  // High score display with glow (show top 5 scores) — tighter spacing
   if(highScores.length > 0){
     ctx.fillStyle='#ff0'; ctx.font='bold 10px Courier New';
     ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
     for(let i=0;i<Math.min(3,highScores.length);i++){
       const label = i===0?'1.' : (i===1?'2.' : '3.');
-      ctx.fillText(`${label} ${String(highScores[i]).padStart(6,'0')}`, canvas.width/2, 355+i*14);
+      ctx.fillText(`${label} ${String(highScores[i]).padStart(6,'0')}`, canvas.width/2, 348+i*12);
     }
     ctx.shadowBlur=0;
   } else if(high > 0){
     ctx.fillStyle='#ff0'; ctx.font='bold 12px Courier New';
     ctx.shadowColor='#ff0'; ctx.shadowBlur=4;
-    ctx.fillText(`HIGH SCORE: ${String(high).padStart(6,'0')}`, canvas.width/2, 355);
+    ctx.fillText(`HIGH SCORE: ${String(high).padStart(6,'0')}`, canvas.width/2, 348);
     ctx.shadowBlur=0;
   }
 
@@ -1451,7 +1458,7 @@ function panelTitleScreen(){
   const tapAlpha = 0.4+Math.sin(t*3)*0.3;
   ctx.fillStyle=`rgba(255,184,255,${tapAlpha})`;
   ctx.font='bold 14px Courier New';
-  ctx.fillText('TAP TO START', canvas.width/2, 370);
+  ctx.fillText('TAP TO START', canvas.width/2, 395);
 }
 
 function draw(){

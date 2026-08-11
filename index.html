@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v3.3 AAA Edition</title>
+<title>MS. PAC-MAN v3.4 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v3.3 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v3.4 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -46,7 +46,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '3.3';
+const GAME_VERSION = '3.4';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -411,19 +411,39 @@ const FRUIT_PATH_2 = [
   {x:0,y:14},
 ];
 
+function getFruitPath(tr){
+  const tRow = tr !== undefined ? tr : (activeTunnelRows[0] || 14);
+  const start = {x:0, y:tRow}, target = {x:COLS-1, y:tRow};
+  if(!cellWalkable(start.x, start.y, false) || !cellWalkable(target.x, target.y, false)) return [];
+  const queue = [[start]], visited = new Set([`${start.x},${start.y}`]);
+  while(queue.length > 0){
+    const path = queue.shift(), curr = path[path.length - 1];
+    if(curr.x === target.x && curr.y === target.y) return path;
+    for(const [dx, dy] of DIRS){
+      const nx = curr.x + dx, ny = curr.y + dy, k = `${nx},${ny}`;
+      if(cellWalkable(nx, ny, false) && !visited.has(k)){
+        visited.add(k);
+        queue.push([...path, {x:nx, y:ny}]);
+      }
+    }
+  }
+  return [];
+}
+
 function spawnFruit(){
   const f = FRUIT_TABLE[Math.min(FRUIT_TABLE.length-1, level-1)];
-  // Choose random direction (left or right tunnel entry)
-  const path = Math.random() < 0.5 ? FRUIT_PATH_1 : FRUIT_PATH_2;
+  let bp = [];
+  for(const tr of activeTunnelRows){ bp = getFruitPath(tr); if(bp.length) break; }
+  if(!bp.length) return;
+  const path = Math.random() < 0.5 ? bp : [...bp].reverse();
   fruit = {
     ...f,
     speed: f.speed || 9.0,
     path: path,
-    pathIndex: 0, // current position in hardcoded path
+    pathIndex: 0,
     life: 10 + Math.random()*2,
     active:true
   };
-  // Start at the first position of chosen path
   fruit.col = path[0].x;
   fruit.row = path[0].y;
   fruit.fromCol = path[0].x;

@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v5.6 AAA Edition</title>
+<title>MS. PAC-MAN v5.7 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v5.6 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v5.7 AAA Edition • tap D-pad / arrows to start</div>
 <div id="game-wrap"><canvas id="game" width="448" height="576"></canvas><div id="crt-overlay" aria-hidden="true"></div></div>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '5.6';
+const GAME_VERSION = '5.7';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -1144,76 +1144,45 @@ function drawMsPac(){
   ctx.rotate(rot);
   const mouth=[0.08,0.24,0.46,0.24][Math.floor(pacman.animFrame/2)%4];
 
-  // Outer golden glow halo - reduced blur for performance
+  // Flat, compact cabinet silhouette; avoid modern bloom around the sprite.
   ctx.save();
-  ctx.shadowColor='#ffff00';
-  ctx.shadowBlur=8;
-  ctx.fillStyle='rgba(255,255,0,0.1)';
-  ctx.beginPath();
-  ctx.arc(0,0,10,mouth,Math.PI*2-mouth);
-  ctx.lineTo(0,0); ctx.fill();
-  ctx.restore();
-
-  // Main body with gradient
-  ctx.save();
-  const grad = ctx.createRadialGradient(-2,-2,1,0,0,8);
-  grad.addColorStop(0,'#ffff60');
-  grad.addColorStop(0.6,'#ffff00');
-  grad.addColorStop(1,'#e0c000');
-  ctx.shadowColor='#ffff00';
-  ctx.shadowBlur=6; // reduced from 10 for performance
-  ctx.fillStyle=grad;
+  ctx.fillStyle='#ffff00';
   ctx.beginPath();
   ctx.arc(0,0,8,mouth,Math.PI*2-mouth);
   ctx.lineTo(0,0); ctx.fill();
-  ctx.restore();
-
-  // Inner highlight (specular)
-  ctx.save();
-  ctx.fillStyle='rgba(255,255,200,0.6)';
-  ctx.beginPath();
-  ctx.arc(-2,-2,3,mouth+0.2,Math.PI*2-mouth-0.4);
-  ctx.fill();
   ctx.restore();
 
   ctx.shadowBlur=0;
 
   // Arcade-style eyes: two compact dark eyes above the mouth, with three
   // individually readable lashes on each outer upper edge.
-  const eyeY = mouth > 0.3 ? -4.4 : -5;
-  const eyes = [{x:-2.6, lash:-1}, {x:2.1, lash:1}];
+  const eyeY = mouth > 0.3 ? -4.2 : -4.7;
+  const eyes = [{x:-2.5, lash:-1}, {x:2.0, lash:1}];
   ctx.fillStyle='#111';
   for(const eye of eyes){
     ctx.beginPath();
-    ctx.ellipse(eye.x,eyeY,2,2.5,0,0,Math.PI*2);
+    ctx.ellipse(eye.x,eyeY,1.7,2.15,0,0,Math.PI*2);
     ctx.fill();
     ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(eye.x+0.7,eyeY-0.8,0.8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(eye.x+0.55,eyeY-0.65,0.55,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#111';
-    ctx.strokeStyle='#111'; ctx.lineWidth=0.9; ctx.lineCap='round';
+    ctx.strokeStyle='#111'; ctx.lineWidth=0.75; ctx.lineCap='round';
     for(let lash=0;lash<3;lash++){
       const bx=eye.x + eye.lash*(1.2 + lash*0.65);
-      const by=eyeY-2.1;
+      const by=eyeY-1.8;
       ctx.beginPath();
       ctx.moveTo(bx,by);
-      ctx.lineTo(bx + eye.lash*(1.5 + lash*0.35), by-2.2);
+      ctx.lineTo(bx + eye.lash*(1.25 + lash*0.25), by-1.7);
       ctx.stroke();
     }
   }
 
-  // Ms. Pac-Man's signature red lips sit at the leading edge of the mouth.
-  // They rotate with the sprite, so the kiss shape always faces travel.
-  const lipX = Math.max(4.8, 7.2 - mouth*2.2);
+  // Cabinet lip detail: two tiny red lobes at the leading mouth edge, not a
+  // large modern kiss icon that overwhelms the 16px character silhouette.
+  const lipX = Math.max(4.7, 6.0 - mouth*1.5);
   ctx.fillStyle='#e83d67';
-  ctx.beginPath();
-  ctx.moveTo(lipX-2.3,1.0);
-  ctx.quadraticCurveTo(lipX-0.8,-0.7,lipX,0.1);
-  ctx.quadraticCurveTo(lipX+0.8,-0.7,lipX+2.3,1.0);
-  ctx.quadraticCurveTo(lipX+0.7,2.6,lipX,2.9);
-  ctx.quadraticCurveTo(lipX-0.7,2.6,lipX-2.3,1.0);
-  ctx.fill();
-  ctx.strokeStyle='#9d173f'; ctx.lineWidth=0.55;
-  ctx.beginPath(); ctx.moveTo(lipX-1.7,1.15); ctx.quadraticCurveTo(lipX,0.55,lipX+1.7,1.15); ctx.stroke();
+  ctx.beginPath(); ctx.arc(lipX-1.0,0.9,1.05,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(lipX+1.0,0.9,1.05,0,Math.PI*2); ctx.fill();
   ctx.restore();
 
   // Bow with enhanced rendering
@@ -1221,43 +1190,19 @@ function drawMsPac(){
   ctx.translate(p.x,p.y);
 
   // Bow stays screen-up like the cabinet sprite; only the face rotates.
-  ctx.shadowColor='#ff69b4';
-  ctx.shadowBlur=4; // reduced from 8 for performance
+  ctx.shadowBlur=0;
   ctx.fillStyle=COLORS.bow;
 
-  // Left loop (teardrop)
+  // Two compact loops and a center knot, matching the upright-cabinet bow.
   ctx.beginPath();
-  ctx.ellipse(-4,-10,3.5,2.8,-0.3,0,Math.PI*2);
+  ctx.ellipse(-3.2,-9,2.8,2.25,-0.25,0,Math.PI*2);
   ctx.fill();
-  // Right loop
   ctx.beginPath();
-  ctx.ellipse(4,-10,3.5,2.8,0.3,0,Math.PI*2);
+  ctx.ellipse(3.2,-9,2.8,2.25,0.25,0,Math.PI*2);
   ctx.fill();
-
-  // Bow highlights
   ctx.shadowBlur=0;
-  ctx.fillStyle='rgba(255,150,200,0.5)';
-  ctx.beginPath(); ctx.arc(-5,-11,1.5,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(3,-11,1.5,0,Math.PI*2); ctx.fill();
-
-  // Center knot (darker pink with 3D effect)
-  const bowGrad = ctx.createRadialGradient(-0.5,-10.5,0.5,0,-10,2);
-  bowGrad.addColorStop(0,'#ff80b0');
-  bowGrad.addColorStop(1,'#c04070');
-  ctx.fillStyle=bowGrad;
+  ctx.fillStyle='#ff4f9a';
   ctx.beginPath(); ctx.arc(0,-10,2,0,Math.PI*2); ctx.fill();
-
-  // Ribbon tails with bezier curves
-  ctx.strokeStyle=COLORS.bow; ctx.lineWidth=1.5;
-  const tailWave = Math.sin(performance.now()/300)*0.3;
-  ctx.beginPath(); ctx.moveTo(-1,-8); ctx.quadraticCurveTo(-3+tailWave,-5,-2,-3); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(1,-8); ctx.quadraticCurveTo(3-tailWave,-5,2,-3); ctx.stroke();
-
-  // Mole on right cheek
-  ctx.fillStyle='#ff80c0';
-  ctx.beginPath(); ctx.arc(4.5,2,1.3,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='rgba(255,100,150,0.4)';
-  ctx.beginPath(); ctx.arc(4.5,2,1.8,0,Math.PI*2); ctx.fill();
 
   ctx.restore();
 }

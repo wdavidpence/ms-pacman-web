@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v4.2 AAA Edition</title>
+<title>MS. PAC-MAN v4.3 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v4.2 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v4.3 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '4.2';
+const GAME_VERSION = '4.3';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -100,7 +100,8 @@ const SCHEDULE = [
   {mode:'scatter', duration:5},
   {mode:'chase', duration:Infinity}
 ];
-const HOUSE_DELAY = [0, 2.5, 5.0, 7.5]; // seconds (arcade-faithful)
+const HOUSE_RELEASE_DOTS = [0, 7, 17, 32]; // cabinet dot-counter release thresholds
+const HOUSE_TIMEOUT = [0, 4, 8, 12]; // safety release if the player stalls
 
 // Ms. Pac-Man fruit by level (values classic-ish)
 const FRUIT_TABLE = [
@@ -351,7 +352,7 @@ function resetActors(){
   ];
   ghosts.forEach((g,i)=>{
     g.inHouse = i!==0;
-    g.houseT = HOUSE_DELAY[i];
+    g.houseT = HOUSE_TIMEOUT[i];
     g.eaten=false;
     if(i===0){ g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11; g.inHouse=false; }
   });
@@ -666,7 +667,7 @@ function updateGhost(g,i,dt){
 
   if(g.inHouse){
     g.houseT -= dt;
-    if(g.houseT<=0){
+    if(g.houseT<=0 || pelletsEaten >= HOUSE_RELEASE_DOTS[i]){
       g.inHouse=false;
       g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11;
       g.moving=false; g.dir=1;
@@ -1743,7 +1744,7 @@ function draw(){
     const barY = hudY + hudH + 4;
     ctx.fillStyle='rgba(0,0,10,.6)';
     roundRect(ctx, barX-1, barY-1, barW+2, barH+2);
-    const fill = powerTimer / Math.max(4, 9-(level-1)*0.7);
+    const fill = powerTimer / POWER_DURATION[Math.min(level-1, POWER_DURATION.length-1)];
     const barColor = powerTimer < 2 ? (Math.floor(powerTimer*6)%2===0?'#fff':'#ff4444') : '#2121ff';
     ctx.fillStyle=barColor;
     ctx.shadowColor=barColor; ctx.shadowBlur=6;
@@ -1921,6 +1922,7 @@ function boot(){
         get fruitCell(){ return fruit && fruit.active ? { x: fruit.col, y: fruit.row } : null; },
         get deathActive(){ return gameState === 'death'; },
         get powerSeconds(){ return powerTimer; },
+        get ghostsInHouse(){ return ghosts.filter(g=>g.inHouse).length; },
         getLevel: () => level,
         getLayoutId: () => getLayoutForLevel(level).id,
         getDimensions: () => ({ cols: COLS, rows: ROWS }),

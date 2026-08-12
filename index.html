@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v4.8 AAA Edition</title>
+<title>MS. PAC-MAN v4.9 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v4.8 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v4.9 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '4.8';
+const GAME_VERSION = '4.9';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -73,7 +73,7 @@ let score=0, high=+localStorage.getItem('mspacHigh')||0, lives=3, level=1, extra
 let gameState='title'; // title|playing|death|intermission|gameover
 let titlePrompt='start';
 let maze=[], totalPellets=0, pelletsEaten=0, powerTimer=0, ghostCombo=0;
-let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, simAccumulator=0, deathT=0;
+let pacman=null, ghosts=[], fruit=null, lastFrameTime=0, simAccumulator=0, eatPause=0, deathT=0;
 let scorePopups=[]; // {x,y,text,t,color}
 let particles=[]; // {x,y,vx,vy,life,maxLife,color,size}
 const MAX_PARTICLES = 80;
@@ -363,6 +363,7 @@ function resetActors(){
   const pacStartRow = getLayoutForLevel(level).id === 4 ? 26 : 23;
   pacman = makeActor(14, pacStartRow, 2, PAC_SPEED, COLORS.pac, 'MsPac');
   pacman.nextDir = 2;
+  eatPause=0;
   powerTimer=0; ghostCombo=0;
   scheduleIndex=0; scheduleTimer=0;
   ghosts = [
@@ -573,6 +574,7 @@ function handlePellet(){
   const c=maze[pacman.row][pacman.col];
   if(c===2){
     maze[pacman.row][pacman.col]=0; score+=10; pelletsEaten++; safeSfx('waka'); scoreFlash=0.15; checkExtra();
+    eatPause=1;
     // Fruit triggers at ~64 dots and when 66 remain (arcade-faithful)
     if(pelletsEaten===64) spawnFruit();
     // remainingPellets = totalPellets - pelletsEaten (cached, no maze scan)
@@ -586,7 +588,7 @@ function handlePellet(){
     }
     if(particles.length > MAX_PARTICLES) particles.splice(0, particles.length - MAX_PARTICLES); // cap particles to prevent freeze
   } else if(c===3){
-    maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++; scoreFlash=0.2;
+    maze[pacman.row][pacman.col]=0; score+=50; pelletsEaten++; scoreFlash=0.2; eatPause=3;
     powerTimer = POWER_DURATION[Math.min(level-1, POWER_DURATION.length-1)];
     ghostCombo=0;
     ghosts.forEach(g=>{ if(!g.eaten && !g.inHouse) g.dir=opposite(g.dir); });
@@ -641,6 +643,7 @@ function nextLevel(){
 }
 
 function updatePac(dt){
+  if(eatPause>0) return;
   const eating = pacman.moving ? (maze[pacman.toRow]?.[pacman.toCol] === 2 || maze[pacman.toRow]?.[pacman.toCol] === 3) : false;
   const pacKind = powerTimer > 0 ? 'pacFright' : (eating ? 'pacEat' : 'pac');
   const effectiveSpeed = powerTimer > 0 ? PAC_SPEED_POWER : PAC_SPEED;
@@ -846,7 +849,8 @@ function update(dt){
   }
 
   updatePac(dt);
-  ghosts.forEach((g,i)=>updateGhost(g,i,dt));
+  if(eatPause>0){ eatPause--; }
+  else ghosts.forEach((g,i)=>updateGhost(g,i,dt));
   updateFruit(dt);
   if(powerTimer>0) powerTimer=Math.max(0,Math.min(10,powerTimer-dt)); // cap at 10s max
   if(powerTimer===0) ghostCombo=0;

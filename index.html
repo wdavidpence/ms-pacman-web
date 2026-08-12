@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v5.5 AAA Edition</title>
+<title>MS. PAC-MAN v5.6 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v5.5 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v5.6 AAA Edition • tap D-pad / arrows to start</div>
 <div id="game-wrap"><canvas id="game" width="448" height="576"></canvas><div id="crt-overlay" aria-hidden="true"></div></div>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '5.5';
+const GAME_VERSION = '5.6';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -1631,6 +1631,11 @@ function draw(){
   const t = performance.now()/1000;
   drawCabinetMarquee(t);
 
+  // Reserve the top band for the HUD. The maze is 31 tiles high; translating
+  // the complete playfield keeps its first rows from disappearing underneath
+  // the score panels while preserving the native tile scale.
+  ctx.save();
+  ctx.translate(0, 38);
   ctx.fillStyle='#000'; ctx.fillRect(-10,-10,canvas.width+20,canvas.height+20);
   drawWalls();
   // tunnel wrap flash at edges
@@ -1687,6 +1692,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(px+4, py-5, 2.5, 0, Math.PI*2); ctx.fill();
   }
   ghosts.forEach(drawGhost);
+  ctx.restore();
 
   // HUD — AAA neon glow with polished panels
   ctx.save();

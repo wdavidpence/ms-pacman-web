@@ -6,14 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v5.2 AAA Edition</title>
+<title>MS. PAC-MAN v5.3 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
-canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33,222,.6),0 0 60px rgba(33,33,222,.3),0 0 90px rgba(33,33,222,.15),inset 0 0 30px rgba(33,33,222,.1);image-rendering:pixelated;max-width:min(calc(100vw - 6px),720px);max-height:100vh;width:auto;height:auto;background:#000}
+canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33,222,.6),0 0 60px rgba(33,33,222,.3),0 0 90px rgba(33,33,222,.15),inset 0 0 30px rgba(33,33,222,.1);image-rendering:pixelated;max-width:min(calc(100vw - 10px),720px);max-height:100vh;width:auto;height:auto;background:#000}
 /* CRT scanlines overlay */
-canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;opacity:.4}
-#game-wrap{position:relative;display:inline-block;border:2px solid #1a1a8e}
+#game-wrap{position:relative;display:inline-block;border:2px solid #1a1a8e;line-height:0}
+#crt-overlay{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 54%,rgba(0,0,0,.42) 100%),repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);opacity:.72;border-radius:2px}
 .status{position:fixed;top:8px;left:0;width:100%;color:#ffb8ff;text-align:center;font-size:15px;font-weight:bold;pointer-events:none;text-shadow:0 0 8px #2121de,0 2px 4px #000;z-index:5}
 #controls{position:fixed;left:max(10px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:170px;height:170px;z-index:10}
 .dpad{position:absolute;width:52px;height:52px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(33,33,222,.35);color:#fff;font-size:24px;line-height:1;box-shadow:0 0 8px rgba(33,33,222,.3)}
@@ -22,8 +22,8 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v5.2 AAA Edition • tap D-pad / arrows to start</div>
-<canvas id="game" width="448" height="576"></canvas>
+<div class="status" id="status">MS. PAC-MAN v5.3 AAA Edition • tap D-pad / arrows to start</div>
+<div id="game-wrap"><canvas id="game" width="448" height="576"></canvas><div id="crt-overlay" aria-hidden="true"></div></div>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
   <button data-dir="2" class="dpad left" type="button">◀</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '5.2';
+const GAME_VERSION = '5.3';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];

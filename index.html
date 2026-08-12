@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v5.1 AAA Edition</title>
+<title>MS. PAC-MAN v5.2 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;b
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v5.1 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v5.2 AAA Edition • tap D-pad / arrows to start</div>
 <canvas id="game" width="448" height="576"></canvas>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '5.1';
+const GAME_VERSION = '5.2';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -879,79 +879,46 @@ function update(dt){
 
 // --- draw ---
 function drawWalls(){
-  // AAA fidelity: Ms. Pac-Man uses SOLID FILL walls (not outline lines)
-  // with per-level color cycling. This is the key visual difference from Pac-Man.
-
+  // Cabinet-accurate maze treatment: black corridors with a single crisp
+  // colored outline around each connected wall shape. The arcade never filled
+  // the maze with a solid color; the outline is what makes the pellets pop.
   const wallColor = getWallColorForLevel(level);
-
-  // Draw contiguous wall regions (not per-tile) to avoid visible seams
-  ctx.fillStyle = wallColor;
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    if(maze[y][x]!==1) continue;
-    // Find the right edge of this wall segment
-    let endX = x;
-    while(endX+1<COLS && maze[y][endX+1]===1) endX++;
-    ctx.fillRect(x*TILE, y*TILE, (endX-x+1)*TILE, TILE);
-  }
-
-  // Bevel: top-left highlight with secondary accent color (arcade-faithful)
   const secondaryColor = getSecondaryColorForLevel(level);
-  ctx.fillStyle = `rgba(255,255,255,0.12)`;
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    if(maze[y][x]!==1) continue;
-    if(y>0 && maze[y-1][x]!==1) ctx.fillRect(x*TILE, y*TILE, TILE, 2);
-    if(x>0 && maze[y][x-1]!==1) ctx.fillRect(x*TILE, y*TILE, 2, TILE);
-  }
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, COLS*TILE, ROWS*TILE);
 
-  // Secondary color accents: subtle glow on wall edges matching arcade accent colors
   ctx.save();
-  ctx.shadowColor = secondaryColor;
-  ctx.shadowBlur = 4;
-  ctx.strokeStyle = `rgba(255,255,255,0.06)`;
-  ctx.lineWidth = 1;
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    if(maze[y][x]!==1) continue;
-    // Draw edge lines where walls meet empty space
-    if(y>0 && maze[y-1][x]!==1){
-      ctx.beginPath();
-      ctx.moveTo(x*TILE, y*TILE);
-      ctx.lineTo((x+1)*TILE, y*TILE);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
-
-  // Bevel: bottom-right shadow (2px edge)
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
-    if(maze[y][x]!==1) continue;
-    if(y<ROWS-1 && maze[y+1][x]!==1) ctx.fillRect(x*TILE, y*TILE+TILE-2, TILE, 2);
-    if(x<COLS-1 && maze[y][x+1]!==1) ctx.fillRect(x*TILE+TILE-2, y*TILE, 2, TILE);
-  }
-
-  // Maze border: outer edge glow for cabinet presence - reduced blur for performance
-  ctx.save();
-  ctx.shadowColor = wallColor;
-  ctx.shadowBlur = 6; // reduced from 12 for performance
   ctx.strokeStyle = wallColor;
   ctx.lineWidth = 3;
-  ctx.strokeRect(0.5, 0.5, COLS*TILE-1, ROWS*TILE-1);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = secondaryColor;
+  ctx.shadowBlur = 3;
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    if(maze[y][x]!==1) continue;
+    const px=x*TILE, py=y*TILE;
+    const openUp = y===0 || maze[y-1][x]!==1;
+    const openRight = x===COLS-1 || maze[y][x+1]!==1;
+    const openDown = y===ROWS-1 || maze[y+1][x]!==1;
+    const openLeft = x===0 || maze[y][x-1]!==1;
+    ctx.beginPath();
+    if(openUp){ ctx.moveTo(px,py); ctx.lineTo(px+TILE,py); }
+    if(openRight){ ctx.moveTo(px+TILE,py); ctx.lineTo(px+TILE,py+TILE); }
+    if(openDown){ ctx.moveTo(px+TILE,py+TILE); ctx.lineTo(px,py+TILE); }
+    if(openLeft){ ctx.moveTo(px,py+TILE); ctx.lineTo(px,py); }
+    ctx.stroke();
+  }
   ctx.restore();
 
-  // Draw doors and house interior
-  for(let y=0;y<ROWS;y++){
-    for(let x=0;x<COLS;x++){
-      const c = maze[y][x];
-      if(c===4){
-        // Arcade-faithful: pink gate line (thin horizontal bar)
-        const px=x*TILE, py=y*TILE;
-        ctx.fillStyle='#ffb8ff';
-        ctx.fillRect(px+1, py+7, TILE-2, 2);
-      } else if(c===5){
-        // Ghost house interior: darker version of wall color
-        ctx.fillStyle = darkenColor(wallColor, 0.3);
-        ctx.fillRect(x*TILE, y*TILE, TILE, TILE);
-      }
+  // Keep the ghost-house floor dark and the gate unmistakably pink.
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    const c=maze[y][x], px=x*TILE, py=y*TILE;
+    if(c===4){
+      ctx.fillStyle='#ffb8ff';
+      ctx.fillRect(px+1, py+7, TILE-2, 2);
+    } else if(c===5){
+      ctx.fillStyle=darkenColor(wallColor, 0.12);
+      ctx.fillRect(px, py, TILE, TILE);
     }
   }
 }

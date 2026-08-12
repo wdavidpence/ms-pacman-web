@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Ccircle cx='16' cy='16' r='11' fill='%23ffff00'/%3E%3Cpath d='M16 16 27 10A11 11 0 0 0 16 5Z' fill='%23000'/%3E%3C/svg%3E">
-<title>MS. PAC-MAN v5.4 AAA Edition</title>
+<title>MS. PAC-MAN v5.5 AAA Edition</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;-webkit-user-select:none;user-select:none}
 body{display:flex;justify-content:center;align-items:center;font-family:"Courier New",monospace}
@@ -22,7 +22,7 @@ canvas{border:3px solid #2121de;border-radius:4px;box-shadow:0 0 30px rgba(33,33
 </style>
 </head>
 <body>
-<div class="status" id="status">MS. PAC-MAN v5.4 AAA Edition • tap D-pad / arrows to start</div>
+<div class="status" id="status">MS. PAC-MAN v5.5 AAA Edition • tap D-pad / arrows to start</div>
 <div id="game-wrap"><canvas id="game" width="448" height="576"></canvas><div id="crt-overlay" aria-hidden="true"></div></div>
 <div id="controls" aria-label="direction controls">
   <button data-dir="1" class="dpad up" type="button">▲</button>
@@ -47,7 +47,7 @@ const COLORS = {
   blinky:'#ff0000', pinky:'#ffb8ff', inky:'#00ffff', clyde:'#ffb852',
   scared:'#2121ff', eyes:'#fff', text:'#dedeff'
 };
-const GAME_VERSION = '5.4';
+const GAME_VERSION = '5.5';
 
 // High score table (arcade-faithful: 5 scrolling scores)
 let highScores = [];
@@ -1132,12 +1132,15 @@ function drawDots(){
 }
 function drawMsPac(){
   const p=posOf(pacman);
-  // AAA Ms. Pac-Man with enhanced glow, gradient, and detail
+  // Face orientation follows the direction actually being travelled. Keeping
+  // the face in this local coordinate system makes the bow, lashes, eyes, and
+  // lips rotate together for R/U/L/D instead of leaving a static profile.
+  const facingDir = pacman.moving ? pacman.dir : pacman.dir;
   ctx.save();
   ctx.translate(p.x,p.y);
 
   // Animated mouth
-  const rot=[0,-Math.PI/2,Math.PI,Math.PI/2][pacman.dir]||0;
+  const rot=[0,-Math.PI/2,Math.PI,Math.PI/2][facingDir]||0;
   ctx.rotate(rot);
   const mouth=[0.08,0.24,0.46,0.24][Math.floor(pacman.animFrame/2)%4];
 
@@ -1175,44 +1178,49 @@ function drawMsPac(){
 
   ctx.shadowBlur=0;
 
-  // Eyes with expression
-  const eyeOff = mouth > 0.3 ? -4 : -5;
+  // Arcade-style eyes: two compact dark eyes above the mouth, with three
+  // individually readable lashes on each outer upper edge.
+  const eyeY = mouth > 0.3 ? -4.4 : -5;
+  const eyes = [{x:-2.6, lash:-1}, {x:2.1, lash:1}];
   ctx.fillStyle='#111';
-  // Left eye (teardrop shape)
-  ctx.beginPath();
-  ctx.ellipse(-2.5,eyeOff,2,2.5,0,0,Math.PI*2);
-  ctx.fill();
-  // Right eye
-  ctx.beginPath();
-  ctx.ellipse(2,eyeOff,2,2.5,0,0,Math.PI*2);
-  ctx.fill();
-
-  // Eye highlights (catchlight)
-  ctx.fillStyle='#fff';
-  ctx.beginPath(); ctx.arc(-1.8,eyeOff-0.8,1,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(2.8,eyeOff-0.8,1,0,Math.PI*2); ctx.fill();
-
-  // Eyelashes with subtle animation
-  const lashAngle = Math.sin(pacman.anim*0.3)*0.1;
-  ctx.strokeStyle='#111'; ctx.lineWidth=1;
-  for(let e=-1;e<=1;e++){
-    const ex = e<0 ? -2.5 : 2;
-    for(let lx=-2;lx<=2;lx+=4){
-      const baseX = ex + lx*0.7;
-      const baseY = eyeOff - 2.2;
+  for(const eye of eyes){
+    ctx.beginPath();
+    ctx.ellipse(eye.x,eyeY,2,2.5,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(eye.x+0.7,eyeY-0.8,0.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#111';
+    ctx.strokeStyle='#111'; ctx.lineWidth=0.9; ctx.lineCap='round';
+    for(let lash=0;lash<3;lash++){
+      const bx=eye.x + eye.lash*(1.2 + lash*0.65);
+      const by=eyeY-2.1;
       ctx.beginPath();
-      ctx.moveTo(baseX, baseY);
-      ctx.lineTo(baseX + (e*0.5 + lashAngle)*3, baseY - 2.5);
+      ctx.moveTo(bx,by);
+      ctx.lineTo(bx + eye.lash*(1.5 + lash*0.35), by-2.2);
       ctx.stroke();
     }
   }
+
+  // Ms. Pac-Man's signature red lips sit at the leading edge of the mouth.
+  // They rotate with the sprite, so the kiss shape always faces travel.
+  const lipX = Math.max(4.8, 7.2 - mouth*2.2);
+  ctx.fillStyle='#e83d67';
+  ctx.beginPath();
+  ctx.moveTo(lipX-2.3,1.0);
+  ctx.quadraticCurveTo(lipX-0.8,-0.7,lipX,0.1);
+  ctx.quadraticCurveTo(lipX+0.8,-0.7,lipX+2.3,1.0);
+  ctx.quadraticCurveTo(lipX+0.7,2.6,lipX,2.9);
+  ctx.quadraticCurveTo(lipX-0.7,2.6,lipX-2.3,1.0);
+  ctx.fill();
+  ctx.strokeStyle='#9d173f'; ctx.lineWidth=0.55;
+  ctx.beginPath(); ctx.moveTo(lipX-1.7,1.15); ctx.quadraticCurveTo(lipX,0.55,lipX+1.7,1.15); ctx.stroke();
   ctx.restore();
 
   // Bow with enhanced rendering
   ctx.save();
   ctx.translate(p.x,p.y);
 
-  // Bow glow - reduced blur for performance
+  // Bow stays screen-up like the cabinet sprite; only the face rotates.
   ctx.shadowColor='#ff69b4';
   ctx.shadowBlur=4; // reduced from 8 for performance
   ctx.fillStyle=COLORS.bow;

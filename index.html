@@ -510,9 +510,10 @@ function updateGhost(g,i,dt){
     }
     // Arcade-faithful: ghosts visibly bounce in ghost house (staggered exit timing)
     g.anim = (g.anim||0) + dt;
-    // Vertical bounce: oscillate up/down by 2 pixels (each ghost has different phase)
+    // Vertical bounce: oscillate on a render-only offset (g.row must stay integer —
+    // fractional rows made maze[row] undefined and crashed ghost pathfinding)
     const ghostPhase = i * 1.5; // stagger each ghost's bounce phase
-    g.row = 11 + Math.sin(g.anim * 6 + ghostPhase) * 0.5;
+    g.bounceY = Math.sin(g.anim * 6 + ghostPhase) * 1.5;
     return;
   }
   // return home when eaten
@@ -1096,7 +1097,7 @@ function drawMsPac(){
   ctx.restore();
 }
 function drawGhost(g){
-  const p = g.inHouse ? {x:g.col*TILE+8, y:g.row*TILE+8} : posOf(g);
+  const p = g.inHouse ? {x:g.col*TILE+8, y:g.row*TILE+8+(g.bounceY||0)} : posOf(g);
   if(g.eaten){
     // Eyes returning home — detailed eye sockets with tracking pupils
     const ed = pacman ? (() => {
@@ -1453,7 +1454,95 @@ function panelTitleScreen(){
   ctx.fillText('TAP TO START', canvas.width/2, 370);
 }
 
-function draw(){
+// === Authentic attract mode (arcade-style, like the human Scratch replicas):
+        // HIGH SCORE/1UP line, PAC-MAN banner, cutscene cards cycling
+        // STARRING MS PAC-MAN / WITH BLINKY / WITH PINKY / ... , PUSH 1 TO START ===
+        let attractFrame = 0;
+        function drawAttract() {
+            attractFrame++;
+            const W = canvas.width, H = canvas.height;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, W, H);
+
+            // Top row: HI-SCORE / 1UP (yellow), like the arcade attract
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#ff8000'; // "HI-SCORE" label
+            ctx.font = 'bold 10px Courier New';
+            ctx.fillText('HI-SCORE', 20, 30);
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillText('8140', 20, 48);
+            ctx.fillStyle = '#ff8000';
+            ctx.font = 'bold 10px Courier New';
+            ctx.fillText('1UP', W - 80, 30);
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillText(String(score || 0), W - 80, 48);
+
+            // Big PAC-MAN banner
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 46px Courier New';
+            ctx.fillText('MS. PAC-MAN', W / 2, 110);
+
+            // Dotted frame card (yellow dot border, like human versions)
+            ctx.fillStyle = '#ffff00';
+            for (let x = 24; x <= W - 24; x += 8) { ctx.fillRect(x, 140, 3, 3); ctx.fillRect(x, 296, 3, 3); }
+            for (let y = 140; y <= 296; y += 8) { ctx.fillRect(24, y, 3, 3); ctx.fillRect(W - 27, y, 3, 3); }
+
+            // Cutscene cards cycling every ~2.6s
+            const cards = [
+                { t: 'STARRING', s: 'MS PAC-MAN', ghost: null },
+                { t: 'WITH', s: 'BLINKY', ghost: '#ff0000' },
+                { t: 'WITH', s: 'PINKY', ghost: '#ffb8ff' },
+                { t: 'WITH', s: 'INKY', ghost: '#00ffff' },
+                { t: 'WITH', s: 'CLYDE', ghost: '#ffb852' },
+            ];
+            const card = cards[Math.floor(attractFrame / 156) % cards.length];
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 18px Courier New';
+            ctx.fillText(card.t, W / 2, 180);
+            ctx.fillStyle = card.ghost || '#ffff00';
+            ctx.font = 'bold 26px Courier New';
+            ctx.fillText(card.s, W / 2, 220);
+
+            // Mini chase animation inside the card: Ms. Pac-Man pursued by current card ghost
+            const cx = ((attractFrame * 2) % (W - 80)) + 40;
+            // Ms. Pac-Man (yellow) — chomping
+            const mouth = (attractFrame % 20 < 10) ? 0.25 : 0.05;
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.moveTo(cx - 50, 250);
+            ctx.arc(cx - 50, 250, 10, Math.PI * mouth, Math.PI * (2 - mouth));
+            ctx.closePath();
+            ctx.fill();
+            if (card.ghost) {
+                ctx.fillStyle = card.ghost;
+                ctx.beginPath();
+                ctx.arc(cx - 50 - 40, 250, 9, Math.PI, 0);
+                ctx.lineTo(cx - 50 - 31, 258);
+                ctx.lineTo(cx - 50 - 40, 254);
+                ctx.lineTo(cx - 50 - 49, 258);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(cx - 50 - 44, 248, 2.5, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx - 50 - 36, 248, 2.5, 0, 7); ctx.fill();
+                ctx.fillStyle = '#0000c0';
+                ctx.beginPath(); ctx.arc(cx - 50 - 43, 248, 1.2, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx - 50 - 35, 248, 1.2, 0, 7); ctx.fill();
+            }
+
+            // Persistent PUSH 1 TO START (bright yellow — visible every frame)
+            ctx.fillStyle = '#ffd000';
+            ctx.font = 'bold 20px Courier New';
+            ctx.fillText('PUSH 1 TO START', W / 2, 340);
+            ctx.font = 'bold 13px Courier New';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('OR PRESS ARROW KEYS', W / 2, 362);
+        }
+
+        function draw() {
   if(gameState==='intermission'){ drawIntermission(); return; }
 
   ctx.save();
@@ -1594,6 +1683,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(lx+1.5, ly-6, 1.5, 0, Math.PI*2); ctx.fill();
   }
 
+  if(gameState==='title'){ drawAttract(); return; } // authentic arcade attract
   if(gameState==='title'){
     // AAA title screen with gradient background and animated elements
     const t = performance.now() / 1000;
@@ -1734,6 +1824,10 @@ document.addEventListener('keydown', e=>{
   if(map[e.key]!==undefined){
     e.preventDefault();
     unlockAudio().then(()=>setDirection(map[e.key]));
+  }
+  if(e.key==='1'){            // arcade: PUSH 1 TO START
+    e.preventDefault();
+    if(gameState==='title'||gameState==='gameover') unlockAudio().then(()=>startGame());
   }
   if(e.key===' '||e.key==='Enter'){
     unlockAudio().then(()=>startGame());

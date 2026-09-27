@@ -186,16 +186,19 @@ async function loadManifest() {
 }
 // decode a serialized maze row-string (2-char cell codes) into numeric grid
 function decodeMap(str) {
+  // authentic grids: rows of 28, single-digit codes
+  // 0=empty 1=wall 2=dot 3=power 4=ghost-house/gate (ghosts only)
   const rows = [];
-  for (let i = 0; i < str.length; i += 32) {
-    let row = [...str.substr(i, Math.min(32, str.length - i))].map(ch => {
-      if (ch === '1') return 1;   // wall
-      if (ch === '0') return 2;   // dot
-      if (ch === '3') return 3;   // power pellet
-      if (ch === '6') return 5;   // ghost house interior
-      return 0;                   // '2','4' = empty path (4 = fruit spawn)
+  for (let i = 0; i < str.length; i += 28) {
+    let row = [...str.substr(i, 28)].map(ch => {
+      if (ch === '1') return 1;
+      if (ch === '2') return 2;
+      if (ch === '3') return 3;
+      if (ch === '4') return 4;
+      if (ch === '6') return 5;   // legacy house-interior code
+      return 0;
     });
-    if (row.length < 32) row = row.concat(Array(32 - row.length).fill(0));
+    if (row.length < 28) row = row.concat(Array(28 - row.length).fill(0));
     rows.push(row);
   }
   return rows;
@@ -205,11 +208,13 @@ function currentMapId() {
   const lv = Math.min(level, ASSETS.LEVELMAPS.mapLevels.length);
   return ASSETS.LEVELMAPS.mapLevels[lv - 1];
 }
+let CURRENT_META = null;
 function createMazeFromData() {
   const id = currentMapId();
   const str = ASSETS.LEVELMAPS && ASSETS.LEVELMAPS.maps[id];
-  if (str) { maze = decodeMap(str); ROWS = maze.length; }
-  else createMaze();
+  if (str && ASSETS.LEVELMAPS.meta && ASSETS.LEVELMAPS.meta[id]) {
+    maze = decodeMap(str); ROWS = maze.length; CURRENT_META = ASSETS.LEVELMAPS.meta[id];
+  } else { createMaze(); CURRENT_META = null; }
   totalPellets = 0;
   for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (maze[y] && (maze[y][x] === 2 || maze[y][x] === 3)) totalPellets++;
   pelletsEaten = 0;
@@ -264,12 +269,14 @@ function cellWalkable(x,y,forGhost){
   if(c===5) return !!forGhost;
   return true;
 }
+function tunnelRows(){ return (CURRENT_META && CURRENT_META.tunnelRows) || [TUNNEL_ROW]; }
 function resolveMove(actor, dir, forGhost){
   const dx=DIRS[dir][0], dy=DIRS[dir][1];
   let nx=actor.col+dx, ny=actor.row+dy, wrapped=false;
   if(ny<0||ny>=ROWS) return null;
-  if(nx<0 && actor.row===TUNNEL_ROW && dir===2){ nx=COLS-1; wrapped=true; }
-  else if(nx>=COLS && actor.row===TUNNEL_ROW && dir===0){ nx=0; wrapped=true; }
+  const tun = tunnelRows();
+  if(nx<0 && tun.includes(actor.row) && dir===2){ nx=COLS-1; wrapped=true; }
+  else if(nx>=COLS && tun.includes(actor.row) && dir===0){ nx=0; wrapped=true; }
   if(nx<0||nx>=COLS) return null;
   if(!cellWalkable(nx,ny,forGhost)) return null;
   // pacman blocked by gate
@@ -302,21 +309,24 @@ function advance(actor, dt){
 }
 
 function resetActors(){
-  pacman = makeActor(14, 23, 2, PAC_SPEED, COLORS.pac, 'MsPac');
+  const m = CURRENT_META;
+  const pacStart = m ? m.pacStart : { x: 14, y: 23, dir: 2 };
+  const spots = m ? m.houseSpots : [[14, 11], [13, 14], [14, 14], [15, 14]];
+  pacman = makeActor(pacStart.x, pacStart.y, pacStart.dir, PAC_SPEED, COLORS.pac, 'MsPac');
   pacman.nextDir = 2;
   powerTimer=0; ghostCombo=0;
   scheduleIndex=0; scheduleTimer=0;
   ghosts = [
-    makeActor(14, 11, 1, GHOST_BASE[0], COLORS.blinky, 'Blinky'),
-    makeActor(13, 14, 3, GHOST_BASE[1], COLORS.pinky, 'Pinky'),
-    makeActor(14, 14, 1, GHOST_BASE[2], COLORS.inky, 'Inky'),
-    makeActor(15, 14, 1, GHOST_BASE[3], COLORS.clyde, 'Sue')
+    makeActor(spots[0][0], spots[0][1], 1, GHOST_BASE[0], COLORS.blinky, 'Blinky'),
+    makeActor(spots[1][0], spots[1][1], 3, GHOST_BASE[1], COLORS.pinky, 'Pinky'),
+    makeActor(spots[2][0], spots[2][1], 1, GHOST_BASE[2], COLORS.inky, 'Inky'),
+    makeActor(spots[3][0], spots[3][1], 1, GHOST_BASE[3], COLORS.clyde, 'Sue')
   ];
   ghosts.forEach((g,i)=>{
     g.inHouse = i!==0;
     g.houseT = HOUSE_DELAY[i];
     g.eaten=false;
-    if(i===0){ g.col=14; g.row=11; g.fromCol=14; g.fromRow=11; g.toCol=14; g.toRow=11; g.inHouse=false; }
+    if(i===0){ g.inHouse=false; }
   });
   fruit=null;
 }
@@ -330,13 +340,13 @@ function currentMode(){
 // corner; chase uses each ghost's personality target.
 function targetFor(i){
   const g=ghosts[i];
-  if(g.eaten) return {x:14,y:14}; // home
+  if(g.eaten) return CURRENT_META ? {x:CURRENT_META.houseSpots[0][0], y:CURRENT_META.houseSpots[0][1]} : {x:14,y:14}; // home
   if(powerTimer>0 && !g.eaten){
     // frightened: random-ish via far pseudo target
     return {x:(Math.random()*COLS)|0, y:(Math.random()*ROWS)|0};
   }
   const mode=currentMode();
-  if(mode==='scatter') return SCATTER_TARGETS[i]; // scatter: head to own corner
+  if(mode==='scatter') return (CURRENT_META ? CURRENT_META.scatter : SCATTER_TARGETS)[i]; // scatter: own corner
   // chase personalities
   const dx=g.col-pacman.col, dy=g.row-pacman.row;
   const dist2=dx*dx+dy*dy;
@@ -386,8 +396,9 @@ const FRUIT_PATH_2 = [
 
 function spawnFruit(){
   const f = FRUIT_TABLE[Math.min(FRUIT_TABLE.length-1, level-1)];
-  // Choose random direction (left or right tunnel entry)
-  const path = Math.random() < 0.5 ? FRUIT_PATH_1 : FRUIT_PATH_2;
+  // Per-map path from data; random direction (reversed = other entry)
+  const base = (CURRENT_META && CURRENT_META.fruitPath) ? CURRENT_META.fruitPath : FRUIT_PATH_1;
+  const path = Math.random() < 0.5 ? base : base.slice().reverse();
   fruit = {
     ...f,
     path: path,
@@ -556,7 +567,7 @@ function startIntermissionOrNext(){
 }
 function nextLevel(){
   level++;
-  createMaze();
+  createMazeFromData();
   resetActors();
   gameState='playing';
   statusEl.textContent = `LEVEL ${level}`;
@@ -611,12 +622,12 @@ function bfsFirstDir(actor, forGhost){
 function updateAttract(dt){
   if(demoFreeze>0){ // death pause — then restart fresh
     demoFreeze-=dt;
-    if(demoFreeze<=0){ createMaze(); resetActors(); }
+    if(demoFreeze<=0){ createMazeFromData(); resetActors(); }
     return;
   }
-  if(!pacman || !ghosts.length){ createMaze(); resetActors(); return; }
+  if(!pacman || !ghosts.length){ createMazeFromData(); resetActors(); return; }
   demoTime+=dt;
-  if(demoTime>60 || totalPellets-pelletsEaten<25){ createMaze(); resetActors(); return; }
+  if(demoTime>60 || totalPellets-pelletsEaten<25){ createMazeFromData(); resetActors(); return; }
   if(!pacman.moving){
     const d=bfsFirstDir(pacman,false);
     if(d!==null && resolveMove(pacman,d,false)) startStep(pacman,d,false);
@@ -647,9 +658,11 @@ function updateGhost(g,i,dt){
     g.houseT -= dt;
     if(g.houseT<=0){
       g.inHouse=false;
-      // Pop out through the door: place on the gate cell, facing up, so the
-      // ghost steps into the corridor naturally and can roam the whole map.
-      g.col=13; g.row=12; g.fromCol=13; g.fromRow=12; g.toCol=13; g.toRow=12;
+      // Pop out through the door: stand on the gate cell facing up, then
+      // pathfinding carries the ghost out into the corridors.
+      const sp = (CURRENT_META && CURRENT_META.houseSpots[i]) || [13,15];
+      g.col=sp[0]; g.row=sp[1]; g.fromCol=sp[0]; g.fromRow=sp[1];
+      g.toCol=sp[0]; g.toRow=sp[1];
       g.moving=false; g.dir=1; g.progress=0;
     }
     // Arcade-faithful: ghosts visibly bounce in ghost house (staggered exit timing)
@@ -660,8 +673,8 @@ function updateGhost(g,i,dt){
     g.bounceY = Math.sin(g.anim * 6 + ghostPhase) * 1.5;
     return;
   }
-  // return home when eaten
-  if(g.eaten && g.col===14 && g.row===14){
+  // reached home (standing on any gate cell) -> back in house
+  if(g.eaten && maze[g.row] && maze[g.row][g.col]===4){
     g.eaten=false; g.inHouse=true; g.houseT=1.2;
   }
 
@@ -752,7 +765,7 @@ function update(dt){
   if(gameState==='gameover'){
     gameoverT += dt;
     if(gameoverT > 8){ // auto-return to live attract demo like the arcade
-      createMaze(); resetActors(); demoTime=0; demoFreeze=0;
+      createMazeFromData(); resetActors(); demoTime=0; demoFreeze=0;
       gameState='attract'; statusEl.textContent='Attract Mode';
     }
     return;
@@ -1486,12 +1499,11 @@ function drawAttract() {
   if(tunnelFlash>0){
     const alpha=Math.min(1,tunnelFlash*4);
     ctx.fillStyle=`rgba(255,255,255,${alpha*0.4})`;
-    ctx.fillRect(0,TUNNEL_ROW*TILE,8,TILE);
-    ctx.fillRect((COLS-1)*TILE,TUNNEL_ROW*TILE,8,TILE);
+    for(const tr of tunnelRows()){ ctx.fillRect(0,tr*TILE,8,TILE); ctx.fillRect((COLS-1)*TILE,tr*TILE,8,TILE); }
   }
-  // tunnel row darker background
+  // tunnel rows darker background
   ctx.fillStyle='rgba(0,0,20,0.3)';
-  ctx.fillRect(0,TUNNEL_ROW*TILE,canvas.width,TILE);
+  for(const tr of tunnelRows()) ctx.fillRect(0,tr*TILE,canvas.width,TILE);
   drawDots();
   drawFruit();
   // score popups (floating text at eaten fruit) - rise animation
@@ -1657,7 +1669,7 @@ function startGame(){
   }
   if(gameState==='attract' || gameState==='title' || gameState==='gameover'){
     score=0; lives=3; level=1; extraLife=false;
-    createMaze(); resetActors();
+    createMazeFromData(); resetActors();
     gameState='ready'; readyTimer=2.5;
     safeSfx('start'); return;
   }
@@ -1682,7 +1694,7 @@ function setDirection(dir){
 
 async function boot(){
   await loadManifest();
-  createMaze();
+  createMazeFromData();
   resetActors();
   gameState='attract';   // live auto-play demo from the start, like the arcade
   statusEl.textContent=`MS. PAC-MAN v${GAME_VERSION} • arcade-style build`;

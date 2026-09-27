@@ -1,0 +1,2589 @@
+{
+ "STAGE": {
+  "costumes": [
+   {
+    "name": "clear",
+    "md5": "5febf55d9b65cd1c58d72f16f54bca8e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map1",
+    "md5": "53fa7b1cbd13a59e4948d6570b962003",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map1blank",
+    "md5": "329761c42cbfa4db5fb168c26c732504",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map1white",
+    "md5": "e6220fa2651ed2f6720aec3c96d204da",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map2",
+    "md5": "788e3b259e3ca5ec0c98ab0d6660c97b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map2blank",
+    "md5": "5dba0d6fd22d3712d8c85f7ab7fd5a3a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map2white",
+    "md5": "37fecc863870744caed5e43f49686da5",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map3",
+    "md5": "86d115228e8a62ceb8448edcf80ae5c8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map3blank",
+    "md5": "f5bb60654ff62d75ae59e39cbed4e35b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map3white",
+    "md5": "8bf1864dcc4d2a905a6a10906173fc1d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map4",
+    "md5": "5e7168778e45f8ce91ed33801a7410c1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map4blank",
+    "md5": "015b1e83ed4245fc1ddd4c56ebe250d3",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map4white",
+    "md5": "53ae083606cd5e62f97fd2be16603d68",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map5",
+    "md5": "bd3e3a1ca1ce753a44365b43d805984c",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map5blank",
+    "md5": "f12c70038d9f817eaf4450c55459f04d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map5white",
+    "md5": "4a1ac162965b4ad575ae9b3b73f75fef",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map6",
+    "md5": "a8c7954a2da97152d4ec3d2130f64ba4",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map6blank",
+    "md5": "2b44f4f4b96e386e64ad82da62c5a870",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map6white",
+    "md5": "edf43445e357af7a5f12e53c64c465f4",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [
+   {
+    "name": "pop",
+    "md5": "83a9787d4cb6f3b7632b4ddfebf74367",
+    "fmt": "wav"
+   },
+   {
+    "name": "idle",
+    "md5": "ff4f7148eba183df50241484143724dc",
+    "fmt": "wav"
+   },
+   {
+    "name": "startmusic",
+    "md5": "668195a97b12d4681260d919be1aa9c9",
+    "fmt": "wav"
+   },
+   {
+    "name": "frightidle",
+    "md5": "be9a1500d1d704becd6be31fa567d94e",
+    "fmt": "wav"
+   },
+   {
+    "name": "intermission1",
+    "md5": "cf6a52f92d66b993ebba8f0858b0d101",
+    "fmt": "wav"
+   },
+   {
+    "name": "extralife",
+    "md5": "09433e9b3e824fc5886a15b00aafa392",
+    "fmt": "wav"
+   }
+  ],
+  "vars": {
+   "Inky Mode": "0",
+   "Inky Eyes": "0",
+   "Ms Pacman Map X": 2,
+   "Frightened Warning Flashes": "5",
+   "Inky Index": 171,
+   "Ms Pacman Map Y": 6,
+   "Frightened Start Time": 58.804,
+   "Eyes Target Map Y": "12",
+   "Action Paused": "0",
+   "Frightened Flash Count": 6,
+   "Eyes Target Map X": "11",
+   "Eyes High Target Map X": "14",
+   "Lives": 1e+83,
+   "Pinky Map X": 3,
+   "Level": "1",
+   "Eyes High Target Map Y": "17",
+   "Pinky Map Y": 12,
+   "Intermission": "0",
+   "Inky Caught": "0",
+   "Lives Earned": "0",
+   "Level Offset": 0,
+   "Introduction Running": "0",
+   "Units Per Second @ 100%": "106",
+   "Frightened Ghosts Flashing": "0",
+   "Sue Map Y": 18,
+   "Sue Map X": 10,
+   "i": 812,
+   "Ghosts Mode": "0",
+   "Level Active": "1",
+   "Last Frightened Start Time": 58.804,
+   "Grid Offset Limit Gap": "15",
+   "Grid Offset Left Max": "0",
+   "Grid Offset Right Max": "285.4278",
+   "Debug Ghost Targets": "0",
+   "Grid Columns": "28",
+   "Level Needing Map Initialization": 1,
+   "Grid Offset Left Limit": -15,
+   "Grid Rows": "28",
+   "Ghost Bonus": "100",
+   "Bonus Level": "1",
+   "Blinky Mode": "0",
+   "Grid Offset Right Limit": 300.4278,
+   "Game Active": "1",
+   "Map": "01111111111111111111111111100100001001000000001001000010040000100100000000100100004001000010011110011110010000100100001000001001000001000010010000100000100100000100001001111111111111111111111111100001000001000000001000001000000100000100000000100000100000011111113330033311111110000001000000003003000000001000000100000000300300000000100022213330033333333330033312220001003003000000003003001000000100300300000000300300100000010033330000000033330010000001000003000000003000001000000100000300066000300000100000013333333333333333333310000001000003000000003000001000000100000300000000300000100022210011111110011111110012220001001000001001000001001000000100100000100100000100100000010010000010010000010010000111111111111111111111111110010000100100000000100100001004000010010000000010010000400111111001111111111001111110",
+   "Blinky Caught": "0",
+   "Ghostbusted Score Showing": "0",
+   "Blinky Eyes": "0",
+   "level i": 1,
+   "Blotter Cycle": "0",
+   "Inky Map Y": 6,
+   "Map Level": "1",
+   "Inky Map X": 3,
+   "Blinky Index": 520,
+   "Ms Pacman Index": 170,
+   "Map Levels": "11222333344445555666633334444555566663333444455556666",
+   "Map String": "01111111111111111111111111100100001001000000001001000010040000100100000000100100004001000010011110011110010000100100001000001001000001000010010000100000100100000100001001111111111113311111111111100001000001000000001000001000000100000100000000100000100000011111113330033311111110000001000000003003000000001000000100000000300300000000100022213330033333333330033312220001003003000000003003001000000100300300000000300300100000010033330000000033330010000001000003000000003000001000000100000300066000300000100000013333333333333333333310000001000003000000003000001000000100000300000000300000100022210011111110011111110012220001001000001001000001001000000100100000100100000100100000010010000010010000010010000111111111111111111111111110010000100100000000100100001004000010010000000010010000400111111001111111111001111110",
+   "Map Data Initialized": 0,
+   "Pinky Mode": "0",
+   "Pinky Eyes": "0",
+   "Pinky Index": 339,
+   "Pinky Caught": "0",
+   "Map Data Length": 812,
+   "Energizer State": "1",
+   "Map Initialization Method": "1",
+   "Sue Mode": "0",
+   "Sue Eyes": "0",
+   "Sue Index": "-1",
+   "Map Initialization Progress": 0.9852216748768473,
+   "High Score": "47950",
+   "Grid Offset X": "142",
+   "Grid Offset Y": "142",
+   "Grid Interval Y": "10.5",
+   "Grid Interval X": "10.5714",
+   "Sue Caught": "0",
+   "Score": 1940,
+   "Check Next Block": 0,
+   "Scared Color": "0",
+   "Consumables Left": 42,
+   "Ghost Bust Crime Scene Y": -79,
+   "Ghost Bust Crime Scene X": 92.56387999999968,
+   "Scatter Chase Cycle": 2,
+   "maps i": 812,
+   "Blot Map X": 6,
+   "Blot Map Y": 28,
+   "Blinky Map Y": 18,
+   "Blot 2 Map X": 5,
+   "Scatter Chase Cycle Time Entered": 85.524,
+   "Blinky Map X": 16,
+   "map string i": 812,
+   "Blot 2 Map Y": 28,
+   "Intro Path X1": "160",
+   "Intro Path Y1": "-36",
+   "Scatter Chase Cycle Duration": "20",
+   "Frightened Seconds": "4",
+   "Check Coordinate": 0,
+   "Intro Path X2": "-86",
+   "Intro Path Y2": "25",
+   "☁ Saved High Score": "47950"
+  }
+ },
+ "Ms Pacman": {
+  "costumes": [
+   {
+    "name": "normal",
+    "md5": "5a0ad4b9493177966fb353dca5e2be9b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped",
+    "md5": "60b688a920ee5281c88912385493ca48",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "normal_open",
+    "md5": "e2569655a502fa97a41af3ea31e873fb",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped_open",
+    "md5": "fc341c9d005c0cd94f5b53ab83054f77",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "normal_closed",
+    "md5": "54e90599adaece78a709e9b7a5601b56",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped_closed",
+    "md5": "b5dba431e1ea148d928dd8745e044a81",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [
+   {
+    "name": "dots_2clip",
+    "md5": "9528567a031dc3cf3ff25d77790bd669",
+    "fmt": "wav"
+   },
+   {
+    "name": "energizer",
+    "md5": "108fc06e8f34ef83f8ec38011044d0d6",
+    "fmt": "wav"
+   },
+   {
+    "name": "mspacmanslimed",
+    "md5": "26d98373b37a17f09eb33180c0a082ad",
+    "fmt": "wav"
+   }
+  ],
+  "vars": {
+   "UPS: Frightened Ghosts": 91.16,
+   "Snap Y": 152,
+   "Moved": "0",
+   "Pinky Caught Local": "0",
+   "Allowed Left": "0",
+   "Last Time Moved": 80.717,
+   "Direction Just Changed": "0",
+   "UPS: Frightened Ghosts - Dots": 83.74000000000001,
+   "UPS: Normal": 83.74000000000001,
+   "Inky Caught Local": "0",
+   "Allowed Right": "1",
+   "Flipped": "1",
+   "Blinky Caught Local": "0",
+   "Move Amount": "7",
+   "Allowed Down": "1",
+   "Current Block": "3",
+   "Allowed Up": "0",
+   "Intermission Chase Started": "1",
+   "Maximum Move Amount": "7",
+   "Units Per Second": 83.74000000000001,
+   "Rotation": 4,
+   "Sue Caught Local": "0",
+   "Offset X": 10.571400000000011,
+   "Point Gap": 44.63750000000003,
+   "Snap X": -131.4286,
+   "Last Index": 170,
+   "Offset Y": 63,
+   "UPS: Normal - Dots": 74.19999999999999
+  }
+ },
+ "Pacman": {
+  "costumes": [
+   {
+    "name": "normal",
+    "md5": "9023a6051ba43e578ca24ff946d645cd",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "normal_open",
+    "md5": "4c9ea6d76564b75be565b69360591d4a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "normal_closed",
+    "md5": "4b1e357faafc0f24b0c9fd36f2209c6e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped",
+    "md5": "a17856dd40dc3b8c897ff67ac7a28fa1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped_open",
+    "md5": "9a726a0ec1c725541656fb0e1fcf9970",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "flipped_closed",
+    "md5": "559efb4f65f54f52cd621b5dafdf82b1",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [
+   {
+    "name": "dots_2clip",
+    "md5": "9528567a031dc3cf3ff25d77790bd669",
+    "fmt": "wav"
+   },
+   {
+    "name": "energizer",
+    "md5": "108fc06e8f34ef83f8ec38011044d0d6",
+    "fmt": "wav"
+   },
+   {
+    "name": "mspacmanslimed",
+    "md5": "26d98373b37a17f09eb33180c0a082ad",
+    "fmt": "wav"
+   }
+  ],
+  "vars": {
+   "Flipped": "1",
+   "Move Amount": 2.94785999999856,
+   "Units Per Second": 109.18,
+   "Intermission Chase Started": "1",
+   "Last Time Moved": 187.322,
+   "Maximum Move Amount": "7",
+   "Point Gap": 3.5490400000026625,
+   "Rotation": "1"
+  }
+ },
+ "Blinky": {
+  "costumes": [
+   {
+    "name": "Left",
+    "md5": "acc49e189c650cc351952748d6cee9c3",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Left_Alt",
+    "md5": "ca370b8c644e4fb3f4467f30ce16559a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right",
+    "md5": "f0ecc63f869e7d747edb3b2eab903cbc",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right_Alt",
+    "md5": "6922bd685f20cd5be87d39bd546b4de4",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up",
+    "md5": "124736e443aa66a833d2c3ff2d666ae9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up_Alt",
+    "md5": "b73ab0aa099b7272ab35feb63465d7e7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down",
+    "md5": "591e6edcb91684d0f87a9cc5dfd0da2f",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down_Alt",
+    "md5": "ac693af18da2868dd7ac44bbc256f1ae",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue",
+    "md5": "7ef7d5d521d4a7bb9876734fb0b4bab1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue_Alt",
+    "md5": "4c2526b47badbea38871d5cf5682072e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White",
+    "md5": "6f6dfdd3f01d050b95f3325b2f2ca09e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White_Alt",
+    "md5": "1ee7c4b42d7f4472cbabed4fdc61e844",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Down",
+    "md5": "3b010baa10070a2c2c4f045f1e5aa906",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Up",
+    "md5": "ecf58b062182cc6f273c6c1736345247",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Left",
+    "md5": "bf17283788feaf5ec4e665039b930520",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Right",
+    "md5": "918f3b3540c8a6aa92133f53f4ecaf38",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Temp Next Map Y": 26,
+   "Target Axis Y": "-1",
+   "Target Map X": 2,
+   "Current Block": "3",
+   "n": 1,
+   "Next Step Map X": 15,
+   "Allowed Left": "1",
+   "Next Step": "-90",
+   "At Home": "0",
+   "Reverse Map Y": 18,
+   "Allowed Right": "0",
+   "Reverse Map X": 16,
+   "Next Step Map Y": 18,
+   "char": "l",
+   "Reverse Next Step": "90",
+   "Rotation": "1",
+   "Allowed Down": "0",
+   "Reverse": "0",
+   "i": 2,
+   "UPS: Normal": 80.56,
+   "Move Amount": 5.719759999999836,
+   "UPS: Eyes": 212,
+   "Direction": "-90",
+   "UPS: Tunnel": 42.400000000000006,
+   "Point Gap": 1.6124400000020884,
+   "Check Block": "3",
+   "UPS: Frightened": 53,
+   "Maximum Move Amount": "7",
+   "Last Time Moved": 90.852,
+   "Check Turn Block": "6",
+   "Target Map Y": 6,
+   "Target Axis X": "-1",
+   "True Offset X": 0,
+   "Temp Next Map X": 27,
+   "Offset X": 160.1834400000021,
+   "Offset Y": 189,
+   "Units Per Second": 80.56,
+   "Target Difference Y": 12,
+   "Costume Rotate Skip": "0",
+   "Check Serialized Index": 519,
+   "Target Difference X": 13,
+   "Color Rotation": "0",
+   "Ghost Mode": "0",
+   "Allowed Up": "0",
+   "Temp Next Step": "180",
+   "Turn Preferences": "ldur"
+  }
+ },
+ "Inky": {
+  "costumes": [
+   {
+    "name": "Left",
+    "md5": "47bbe3f5b8b595edeb952bf3426b6437",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Left_Alt",
+    "md5": "c4614a651fde376ac10d2ffecef56dc5",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right",
+    "md5": "1cc8e37ed5241203bc5b168fc57f2b87",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right_Alt",
+    "md5": "1d7cf8ee14ea85308cdae13b508637d0",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up",
+    "md5": "f6d8ec4e53f18e91962f0cb238d592c1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up_Alt",
+    "md5": "777b2c0983315f771cdf6408a8e1db3c",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down",
+    "md5": "1105bbb9c31464122ad706140e7b3d9c",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down_Alt",
+    "md5": "65e51674f896f4c2961a4be529a88b8b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue",
+    "md5": "7ef7d5d521d4a7bb9876734fb0b4bab1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue_Alt",
+    "md5": "4c2526b47badbea38871d5cf5682072e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White",
+    "md5": "6f6dfdd3f01d050b95f3325b2f2ca09e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White_Alt",
+    "md5": "1ee7c4b42d7f4472cbabed4fdc61e844",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Down",
+    "md5": "3b010baa10070a2c2c4f045f1e5aa906",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Up",
+    "md5": "ecf58b062182cc6f273c6c1736345247",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Left",
+    "md5": "bf17283788feaf5ec4e665039b930520",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Right",
+    "md5": "918f3b3540c8a6aa92133f53f4ecaf38",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Temp Next Map Y": 27,
+   "Temp Next Map X": 2,
+   "Point Gap": 5.513880000001379,
+   "Target Difference X": 18,
+   "Target Difference Y": 11,
+   "Target Map X": -16,
+   "Turn Preferences": "ldur",
+   "Check Serialized Index": 142,
+   "Costume Rotate Skip": "0",
+   "Color Rotation": 0,
+   "Ms Pacman Offset Map X": 0,
+   "Ms Pacman Offset Map Y": 6,
+   "Move Amount": "7",
+   "Check Turn Block": "3",
+   "m": 6,
+   "Target Axis Y": "-1",
+   "Maximum Move Amount": "7",
+   "Allowed Up": "0",
+   "Last Time Moved": 90.852,
+   "char": "l",
+   "Offset X": 16.08528000000139,
+   "Offset Y": 63,
+   "n": 1,
+   "Reverse Map Y": 6,
+   "Allowed Left": "0",
+   "Hold Blinky Map Y": 18,
+   "UPS: Normal": 80.56,
+   "Allowed Right": "0",
+   "At Home": "0",
+   "Reverse Next Step": "90",
+   "Rotation": 2,
+   "UPS: Eyes": 212,
+   "Next Step": "-1",
+   "Hold Blinky Map X": 16,
+   "UPS: Frightened": 53,
+   "Reverse": "0",
+   "UPS: Tunnel": 42.400000000000006,
+   "Next Step Map Y": 5,
+   "Direction": "180",
+   "Next Step Map X": 2,
+   "Reverse Map X": 3,
+   "Allowed Down": "1",
+   "Units Per Second": 80.56,
+   "Map X": 10,
+   "Check Block": "3",
+   "Map Y": 14,
+   "Current Block": "3",
+   "Target Axis X": "-1",
+   "Target Map Y": -6,
+   "Temp Next Step": "0"
+  }
+ },
+ "Pinky": {
+  "costumes": [
+   {
+    "name": "Left",
+    "md5": "e37fc12a83c2a29cfde202ba4784b214",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Left_Alt",
+    "md5": "5f8e7e84c58b176a7dbef98358a4014b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right",
+    "md5": "4adf7bcbe3f375573ca4dbc07c01bc9c",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right_Alt",
+    "md5": "f72d2923a3b3a9549a69cad598d20915",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up",
+    "md5": "00abc630e4b87aed52ee906bc187e118",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up_Alt",
+    "md5": "f55ed3a8ea70420ca14d23a4acda74ee",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down",
+    "md5": "7753245f689e00792188ebab318a2a15",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down_Alt",
+    "md5": "dd4c5ed7ec892f7bf9261f21a960ee1a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue",
+    "md5": "7ef7d5d521d4a7bb9876734fb0b4bab1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue_Alt",
+    "md5": "4c2526b47badbea38871d5cf5682072e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White",
+    "md5": "6f6dfdd3f01d050b95f3325b2f2ca09e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White_Alt",
+    "md5": "1ee7c4b42d7f4472cbabed4fdc61e844",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Down",
+    "md5": "3b010baa10070a2c2c4f045f1e5aa906",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Up",
+    "md5": "ecf58b062182cc6f273c6c1736345247",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Left",
+    "md5": "bf17283788feaf5ec4e665039b930520",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Right",
+    "md5": "918f3b3540c8a6aa92133f53f4ecaf38",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Target Map X": -2,
+   "Temp Next Map Y": 25,
+   "Target Axis Y": "-1",
+   "Target Difference X": 4,
+   "Temp Next Map X": 3,
+   "Offset Y": 126,
+   "Target Difference Y": 6,
+   "Temp Next Step": "-90",
+   "Units Per Second": 42.400000000000006,
+   "Turn Preferences": "dlur",
+   "Target Axis X": "-1",
+   "Next Step Map X": 2,
+   "Next Step Map Y": 12,
+   "Allowed Down": "0",
+   "Next Step": "-90",
+   "n": 2,
+   "Reverse Map X": 3,
+   "Reverse Map Y": 12,
+   "Direction": "-90",
+   "Check Block": "2",
+   "Current Block": "2",
+   "Check Turn Block": "0",
+   "Reverse Next Step": "90",
+   "Allowed Up": "0",
+   "Rotation": 3,
+   "Move Amount": 6.656800000000454,
+   "Reverse": "0",
+   "m": 4,
+   "Costume Rotate Skip": "0",
+   "Color Rotation": 0,
+   "Check Serialized Index": 338,
+   "Last Time Moved": 90.852,
+   "Maximum Move Amount": "7",
+   "Point Gap": 7.906199999999373,
+   "UPS: Normal": 80.56,
+   "UPS: Eyes": 212,
+   "Offset X": 18.477599999999384,
+   "UPS: Tunnel": 42.400000000000006,
+   "char": "l",
+   "Allowed Left": "1",
+   "Target Map Y": 6,
+   "Allowed Right": "0",
+   "At Home": "0",
+   "UPS: Frightened": 53
+  }
+ },
+ "Sue": {
+  "costumes": [
+   {
+    "name": "Left",
+    "md5": "494cbfefeae4693be357bea3be7464cd",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Left_Alt",
+    "md5": "1ef00963d7d0a15fb7f427f053a08ea3",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right",
+    "md5": "4f1816fd8a650ede50a5f3575ecd974a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Right_Alt",
+    "md5": "1e08c45960953a2864f918f30ab27f3a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up",
+    "md5": "04e4a0dcb8d17ebfe4707309f5d8c8be",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Up_Alt",
+    "md5": "bc0112500071b207ad0db5469392600d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down",
+    "md5": "8e0546f172ba8c8e467c4b439126fa9a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Down_Alt",
+    "md5": "b89be217965c4b2367f445f01a613851",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue",
+    "md5": "7ef7d5d521d4a7bb9876734fb0b4bab1",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Blue_Alt",
+    "md5": "4c2526b47badbea38871d5cf5682072e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White",
+    "md5": "6f6dfdd3f01d050b95f3325b2f2ca09e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "White_Alt",
+    "md5": "1ee7c4b42d7f4472cbabed4fdc61e844",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Down",
+    "md5": "3b010baa10070a2c2c4f045f1e5aa906",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Up",
+    "md5": "ecf58b062182cc6f273c6c1736345247",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Left",
+    "md5": "bf17283788feaf5ec4e665039b930520",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Eyes_Right",
+    "md5": "918f3b3540c8a6aa92133f53f4ecaf38",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Temp Next Map Y": 21,
+   "Allowed Right": "0",
+   "UPS: Frightened": 53,
+   "Target Difference Y": 9,
+   "Target Difference X": 3,
+   "Target Map Y": 28,
+   "Units Per Second": 80.56,
+   "Temp Next Step": "90",
+   "Allowed Left": "0",
+   "Turn Preferences": "uldr",
+   "Target Axis X": "-1",
+   "Allowed Down": "0",
+   "Next Step Map Y": 19,
+   "Next Step Map X": 10,
+   "Next Step": "0",
+   "n": 1,
+   "Reverse Map Y": 18,
+   "Reverse Map X": 10,
+   "Direction": "0",
+   "Check Block": "3",
+   "Current Block": "3",
+   "Check Turn Block": "3",
+   "Reverse Next Step": "90",
+   "Allowed Up": "1",
+   "m": "1",
+   "Rotation": "0",
+   "Reverse": "1",
+   "Check Serialized Index": 542,
+   "Costume Rotate Skip": "0",
+   "Color Rotation": 0,
+   "Move Amount": 5.397519999999441,
+   "Last Time Moved": 70.719,
+   "Maximum Move Amount": "7",
+   "Point Gap": 9.763879999999858,
+   "UPS: Normal": 80.56,
+   "UPS: Eyes": 212,
+   "UPS: Tunnel": 42.400000000000006,
+   "char": "u",
+   "Offset Y": 189.73612000000014,
+   "Offset X": 95.1426,
+   "At Home": "1",
+   "Target Map X": 7,
+   "Target Axis Y": "1",
+   "Temp Next Map X": 9
+  }
+ },
+ "Fruit": {
+  "costumes": [
+   {
+    "name": "1_",
+    "md5": "a061491a36ab03a00790f80bb013fd59",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "f0e1a0c9ddadd0c77c1329a0ee9fd6b3",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "f7b4de1990c9e44ea90b15fdcc7d2b99",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "253f9b44f02c3cd4dc0dfa225e8d120a",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "633a0a9dfed7824f3ae0ab5939f7ae78",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "ccffb743dc3f23fd9dca87dfecc8f711",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "71a9484a4f99371b0439e598522222cf",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HighScore": {
+  "costumes": [
+   {
+    "name": "HighScore",
+    "md5": "7befbb995744602c6b409f35faac87aa",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "1UP": {
+  "costumes": [
+   {
+    "name": "1up",
+    "md5": "3b0c30de88c76c1890a3f60f3a851475",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Rotation": "0",
+   "Blinking Player Up": "1"
+  }
+ },
+ "ScoreDigit1": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit2": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit3": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit4": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit5": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit6": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "ScoreDigit7": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit1": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit2": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit3": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit4": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit5": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit6": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "HScoreDigit7": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Player Up": {
+  "costumes": [
+   {
+    "name": "player_one",
+    "md5": "7557dadb5ac01c4b485798822b15edf5",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "GhostBonus": {
+  "costumes": [
+   {
+    "name": "200_",
+    "md5": "ac1a4bd14d13b6e9d1e75de659f0eace",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "400_",
+    "md5": "90d96bdfe4d54e58f05348be1eeddf81",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "800_",
+    "md5": "aff201ce010a3e8a2478fce96436dec5",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1600_",
+    "md5": "ba724571f7212d25dea0d593411d717e",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [
+   {
+    "name": "ghostbust",
+    "md5": "3a91e859817c90f40ef625197faef4e8",
+    "fmt": "wav"
+   }
+  ],
+  "vars": {}
+ },
+ "Status": {
+  "costumes": [
+   {
+    "name": "ready",
+    "md5": "c5ab347f86267625c5dcda6eda61b773",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "gameover",
+    "md5": "624ce5361809a147759ef3e79d9e5927",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Lives": {
+  "costumes": [
+   {
+    "name": "5_",
+    "md5": "1678c55091916258fa6eb17d43bda308",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Bonuses": {
+  "costumes": [
+   {
+    "name": "1_",
+    "md5": "962eeb6f3e8b6f054507e26eb8774e9e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "39cc60beab0734928fdfe1ee0eba2f92",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "96c25299bc98b1fe62298eaccbae8e55",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "751b88e23ab7bfef02e63e7dbe7a5018",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "127d5aae046bc24a62c53a7bebdf0b73",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "0ef03dd247427126f19c9e96a81791e4",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "a7ac08205d60b8476e0decc121d3a33c",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "IntroTextMP": {
+  "costumes": [
+   {
+    "name": "mspacmantext",
+    "md5": "e4a3a102bf1a13f276f6c3b0f1a96b62",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Introductions": {
+  "costumes": [
+   {
+    "name": "Blinky",
+    "md5": "279554261e18b54203d85124ac14a3ee",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Pinky",
+    "md5": "0024e85ea9a19a629268e448a661e0d0",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Inky",
+    "md5": "d5663f34bf4586ef2febda26cb1866ed",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "Sue",
+    "md5": "95e35b8fd123348e615e9c8e7d749bd8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "MsPacMan",
+    "md5": "a5db3bb1020c29e7032fbbe52a4c42a9",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "IntroLights": {
+  "costumes": [
+   {
+    "name": "intro1",
+    "md5": "0d6e926bcf1668ed102604c805562666",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro2",
+    "md5": "8cd767eba0e69147470cdb77595a0f85",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro3",
+    "md5": "003d7236c500607387a8b4ab078b7213",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro4",
+    "md5": "b4441551b39a1d355cd31875988c01b4",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro5",
+    "md5": "4dab2736511d989610c30cf7ba59e3e7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro6",
+    "md5": "0c0a8434ba4f3d083cfcd1baa256f34b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro7",
+    "md5": "c61c656997752e3d14db9a8ee7fe6b6b",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro8",
+    "md5": "8b24da776df39d1e2b745c06dcd4d8f0",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro9",
+    "md5": "ef8bf17f58d37d310dc8cc27558f4cef",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro10",
+    "md5": "9d3e657926cca437ff111954c6621ca7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro11",
+    "md5": "2fa30fb3da321ebf5e65ea50b3c0a4bd",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro12",
+    "md5": "0453d3c23329ac2db0508b86bd37efa8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro13",
+    "md5": "48e6df3e4a6a00eaff6c60f944a28a57",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro14",
+    "md5": "ceec8f66c43dd73d579ee769486dffb4",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro15",
+    "md5": "8bb8ec60ebb0022302f801400b1eca25",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "intro16",
+    "md5": "e9a8832715dec706e64a42c223fc37de",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Push1ToStart": {
+  "costumes": [
+   {
+    "name": "1tostart",
+    "md5": "1a955e10ea879ed6471db8a4a3763bff",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "Rotation": 2
+  }
+ },
+ "Credit0": {
+  "costumes": [
+   {
+    "name": "credit",
+    "md5": "136c6d60b410e8d3e1c1c29450da34da",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Act1Scene": {
+  "costumes": [
+   {
+    "name": "textonly",
+    "md5": "0670b854ccbf7a7a5b81586e04f86893",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "open",
+    "md5": "0c5244215887df86127b06bdfe96f84e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "midway",
+    "md5": "3b9152a64b759ab8fee8ae6e9bda98df",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "closed",
+    "md5": "c0093339071b6c68da2a8310e68b9457",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "opennotext",
+    "md5": "f10c9852a06ccd9d6a13d84582752836",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "sceneonly",
+    "md5": "eda7c10666c90db6d018ae70194c00fb",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Heart": {
+  "costumes": [
+   {
+    "name": "heart",
+    "md5": "c3620b9afe061ecf8f4e2885c196edd0",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Energizers": {
+  "costumes": [
+   {
+    "name": "map1",
+    "md5": "977b9cd24993c803bb4e09a1803a8e70",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map2",
+    "md5": "e6ef9a0e38474e32fbb6509c90bf69fe",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map3",
+    "md5": "872a3d5ff54dc4b6534d0da192f2d2bc",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map4",
+    "md5": "3b213445781a923dc8ad9d4bd70394a0",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map5",
+    "md5": "872a3d5ff54dc4b6534d0da192f2d2bc",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "map6",
+    "md5": "3b213445781a923dc8ad9d4bd70394a0",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Mask Left": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "dd425ee7da44463907e238046c50540f",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Mask Right": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "dd425ee7da44463907e238046c50540f",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "resetmsg": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "e36e4f40dc086e0b4fde99cb340b8054",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Progress": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "8c1afba46e187d2f4e06bce769586f75",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Debug Map": {
+  "costumes": [
+   {
+    "name": "0_",
+    "md5": "332c027ea65111079d93ec9517dd12b8",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "1_",
+    "md5": "0791aaa98c73e3583f3ea676a3bf5d2d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "2_",
+    "md5": "a832e880834f2c96fad97c8b6771044e",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "3_",
+    "md5": "b5c68e635f310d643c90004de5d32b64",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "4_",
+    "md5": "8a9177df15714d34221d2d02a81f52e9",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "5_",
+    "md5": "2e523127ae65ca8ff0341a82fab54629",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "6_",
+    "md5": "f0dc74c271f4f72514739bbd7d01b981",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "7_",
+    "md5": "fffe503eefc0007de1f798eb216c994d",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "8_",
+    "md5": "49068df854960f8124b32134137e2ff7",
+    "fmt": "png",
+    "w": 2
+   },
+   {
+    "name": "9_",
+    "md5": "b2380fc8d68eb5d9aed2880a573df684",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {
+   "x": 28,
+   "y": 29,
+   "Debug Mode": "0"
+  }
+ },
+ "Dot Blotter": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "ee18006345d066b85e45a3ad11a80175",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Dot Blotter2": {
+  "costumes": [
+   {
+    "name": "costume1",
+    "md5": "ee18006345d066b85e45a3ad11a80175",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Inky Target": {
+  "costumes": [
+   {
+    "name": "crosshair_blue",
+    "md5": "69a7b4e742be94b4894d5e4714b1da93",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Sue Target": {
+  "costumes": [
+   {
+    "name": "crosshair_gold",
+    "md5": "0942cb6c66d7f3a1eb335d43d72ba400",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Pinky Target": {
+  "costumes": [
+   {
+    "name": "crosshair_pinky",
+    "md5": "163129b45a718f6176f8bb525772d77d",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ },
+ "Blinky Target": {
+  "costumes": [
+   {
+    "name": "crosshair_red",
+    "md5": "fc87fa33f0410313022f4e3cc59018e2",
+    "fmt": "png",
+    "w": 2
+   }
+  ],
+  "sounds": [],
+  "vars": {}
+ }
+}

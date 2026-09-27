@@ -177,8 +177,8 @@ async function loadManifest() {
     if (lm.ok) ASSETS.LEVELMAPS = await lm.json();
     const jobs = [];
     for (const [spr, o] of Object.entries(ASSETS.manifest)) {
-      for (const c of o.costumes) jobs.push(loadImg(spr, c.name, c.md5 + '.' + c.fmt));
-      for (const s of o.sounds) loadSound(spr, s.name, s.md5 + '.' + s.fmt);
+      for (const c of o.costumes) jobs.push(loadImg(spr, c.name, c.file || (c.md5 + '.' + c.fmt)));
+      for (const s of o.sounds) loadSound(spr, s.name, s.file || (s.md5 + '.' + s.fmt));
     }
     await Promise.all(jobs);
     ASSETS.ready = true;
